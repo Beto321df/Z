@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Z Hub - Multi-User Panel & Loadstrings</title>
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #09090b;
+            --card-bg: rgba(18, 18, 22, 0.95);
+            --card-border: #27272a;
+            --accent: #ef4444;
+            --accent-hover: #dc2626;
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --success: #34d399;
+            --success-hover: #059669;
+            --discord: #5865F2;
+            --tiktok: #ff0050;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px 80px 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 750px;
+            z-index: 1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            animation: fadeInDown 0.4s ease;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            color: var(--accent);
+            letter-spacing: 2px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            text-shadow: 0 0 25px rgba(239, 68, 68, 0.4);
+        }
+
+        header p {
+            color: var(--text-muted);
+            margin-top: 6px;
+            font-size: 1rem;
+        }
+
+        .social-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 25px;
+            animation: fadeInDown 0.5s ease;
+        }
+
+        .social-btn {
+            flex: 1;
+            background: rgba(24, 24, 27, 0.9);
+            border: 1px solid var(--card-border);
+            padding: 12px 16px;
+            border-radius: 12px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .social-btn.discord:hover {
+            background-color: var(--discord);
+            border-color: var(--discord);
+            box-shadow: 0 0 20px rgba(88, 101, 242, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .social-btn.tiktok:hover {
+            background-color: var(--tiktok);
+            border-color: var(--tiktok);
+            box-shadow: 0 0 20px rgba(255, 0, 80, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .social-btn i {
+            font-size: 1.2rem;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            margin-bottom: 20px;
+            animation: fadeInUp 0.4s ease;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(239, 68, 68, 0.5);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 13px 20px;
+            border-radius: 11px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.2s ease;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+        }
+
+        .btn:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background-color: #27272a;
+            color: var(--text-main);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background-color: #3f3f46;
+            box-shadow: 0 6px 20px rgba(63, 63, 70, 0.4);
+        }
+
+        .btn-danger {
+            background-color: #7f1d1d;
+            color: #fca5a5;
+            box-shadow: 0 4px 15px rgba(127, 29, 29, 0.3);
+        }
+
+        .btn-danger:hover {
+            background-color: #991b1b;
+            box-shadow: 0 6px 20px rgba(153, 27, 27, 0.5);
+        }
+
+        .input-wrapper {
+            position: relative;
+            margin-top: 8px;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px 15px 13px 44px;
+            background-color: #09090b;
+            border: 1px solid var(--card-border);
+            border-radius: 11px;
+            color: white;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+        }
+
+        input:focus + i {
+            color: var(--accent);
+        }
+
+        /* FIX AL EDITOR DE CÓDIGO */
+        .code-editor-wrapper {
+            display: flex;
+            background-color: #09090b;
+            border: 1px solid var(--card-border);
+            border-radius: 11px;
+            overflow: hidden;
+            margin-top: 8px;
+            height: 250px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .code-editor-wrapper:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+        }
+
+        .line-numbers {
+            width: 55px;
+            background-color: #121216;
+            color: #52525b;
+            padding: 12px 8px 12px 0;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            text-align: right;
+            user-select: none;
+            border-right: 1px solid var(--card-border);
+            overflow: hidden;
+            white-space: pre;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .code-editor-wrapper textarea {
+            flex: 1;
+            height: 100%;
+            border: none;
+            background: transparent;
+            color: white;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            padding: 12px 15px;
+            outline: none;
+            resize: none;
+            white-space: pre;
+            overflow: auto;
+            box-sizing: border-box;
+        }
+
+        .line-counter-info {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: right;
+            margin-top: 6px;
+            font-weight: 700;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+            text-align: left;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            display: block;
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        .script-list-item {
+            background: #18181b;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--card-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .script-list-item:hover {
+            border-color: rgba(239, 68, 68, 0.4);
+            transform: translateX(4px);
+            background: #1e1e24;
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .output-box {
+            background: #000;
+            padding: 14px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            word-break: break-all;
+            color: var(--success);
+            margin-top: 8px;
+            border: 1px solid #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.8);
+        }
+
+        .alert {
+            padding: 13px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-weight: 600;
+        }
+        .alert-error { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        
+        .user-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #27272a;
+            color: var(--success);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+        }
+
+        #toast-notif {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #18181b;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--success);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 9999;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            transform: translateY(100px);
+            opacity: 0;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        #toast-notif.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast-notif">
+        <i class="fa-solid fa-circle-check" style="color: var(--success);"></i>
+        <span id="toast-text">¡Loadstring copiado al portapapeles!</span>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-shield-halved"></i> Z Protector</h1>
+            <p>Sube tus scripts de forma segura y rápida</p>
+        </header>
+
+        <div class="social-bar">
+            <a href="https://discord.gg/6yw4xFPE6" target="_blank" class="social-btn discord">
+                <i class="fa-brands fa-discord"></i> Discord Servidor
+            </a>
+            <a href="https://www.tiktok.com/@znoreste" target="_blank" class="social-btn tiktok">
+                <i class="fa-brands fa-tiktok"></i> TikTok @znoreste
+            </a>
+        </div>
+
+        <!-- VISTA 0: LOGIN -->
+        <div id="view-login" class="card">
+            <h2 style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;"><i class="fa-solid fa-key" style="color: var(--accent);"></i> Acceso al Panel</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 22px;">Ingresa tu Key de Creador (Mínimo 8 caracteres) o Master Key.</p>
+            
+            <div id="login-alert" class="hidden"></div>
+
+            <div class="form-group">
+                <label>Key / Contraseña de Acceso:</label>
+                <div class="input-wrapper">
+                    <input type="password" id="login-key-input" placeholder="Ejemp: Zhub_User9821">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+            </div>
+
+            <div class="form-group hidden" id="login-pin-group">
+                <label id="pin-label">PIN de 4 dígitos:</label>
+                <div class="input-wrapper">
+                    <input type="password" id="login-pin-input" maxlength="4" placeholder="••••">
+                    <i class="fa-solid fa-shield-keyhole"></i>
+                </div>
+            </div>
+
+            <button class="btn" onclick="iniciarSesion()"><i class="fa-solid fa-right-to-bracket"></i> Ingresar al Panel</button>
+        </div>
+
+        <!-- VISTA 1: DASHBOARD -->
+        <div id="view-dashboard" class="card hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                <h2 style="display: flex; align-items: center; gap: 10px;"><i class="fa-solid fa-code" style="color: var(--accent);"></i> Tus Scripts Guardados</h2>
+                <span id="user-role-badge" class="user-badge"><i class="fa-solid fa-user-shield"></i> Modo Creador</span>
+            </div>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Administra tus accesos directos (Límite: 5 scripts por Key).</p>
+            
+            <div id="container-scripts">
+                <p style="color: var(--text-muted); text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando scripts...</p>
+            </div>
+
+            <button class="btn" onclick="cambiarVista('create')"><i class="fa-solid fa-plus"></i> Crear Nuevo Script / Loader</button>
+            <button class="btn btn-secondary" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button>
+        </div>
+
+        <!-- VISTA 2: CREAR SCRIPT -->
+        <div id="view-create" class="card hidden">
+            <h2 style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;"><i class="fa-solid fa-file-circle-plus" style="color: var(--accent);"></i> Subir Nuevo Script</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 18px;">Rellena los datos para generar tu loader (Máximo 3,000 líneas).</p>
+
+            <div id="msg-alert" class="hidden"></div>
+
+            <div class="form-group">
+                <label>Nombre o ID del Script:</label>
+                <div class="input-wrapper">
+                    <input type="text" id="script-id" placeholder="ej. bloxfruits-auto">
+                    <i class="fa-solid fa-tag"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Código Luau Completo (Pega tu script aquí):</label>
+                <div class="code-editor-wrapper">
+                    <div class="line-numbers" id="line-numbers-create">1</div>
+                    <textarea id="script-code" wrap="off" placeholder="print('Hola mundo script aquí...')"></textarea>
+                </div>
+                <div class="line-counter-info" id="line-counter-create">Líneas: 1 / 3,000</div>
+            </div>
+
+            <button class="btn" onclick="guardarScriptEnFirebase()"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar Script</button>
+            <button class="btn btn-secondary" onclick="cambiarVista('dashboard')"><i class="fa-solid fa-arrow-left"></i> Regresar</button>
+        </div>
+
+        <!-- VISTA 3: EDITAR / ELIMINAR SCRIPT -->
+        <div id="view-edit" class="card hidden">
+            <h2 style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;"><i class="fa-solid fa-pen-to-square" style="color: var(--accent);"></i> Administrar Script</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 18px;">Modifica los datos o elimina el script (Máximo 3,000 líneas).</p>
+
+            <div id="edit-alert" class="hidden"></div>
+
+            <div class="form-group">
+                <label>ID del Script (No modificable):</label>
+                <div class="input-wrapper">
+                    <input type="text" id="edit-script-id" readonly style="opacity: 0.6; cursor: not-allowed;">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Código Luau Completo:</label>
+                <div class="code-editor-wrapper">
+                    <div class="line-numbers" id="line-numbers-edit">1</div>
+                    <textarea id="edit-script-code" wrap="off"></textarea>
+                </div>
+                <div class="line-counter-info" id="line-counter-edit">Líneas: 1 / 3,000</div>
+            </div>
+
+            <button class="btn" onclick="actualizarScriptEnFirebase()"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
+            <button class="btn btn-danger" onclick="eliminarScriptDeFirebase()"><i class="fa-solid fa-trash-can"></i> Eliminar Script</button>
+            <button class="btn btn-secondary" onclick="cambiarVista('dashboard')"><i class="fa-solid fa-arrow-left"></i> Volver al Dashboard</button>
+        </div>
+
+        <!-- VISTA 4: ÉXITO -->
+        <div id="view-success" class="card hidden" style="text-align: center;">
+            <div style="font-size: 3rem; color: var(--success); margin-bottom: 10px;">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h2 style="color: var(--success);">¡Script Generado con Éxito!</h2>
+
+            <div class="form-group" style="margin-top: 20px; text-align: left;">
+                <label>Link del Loadstring para Roblox:</label>
+                <div class="output-box" id="out-loadstring">Cargando...</div>
+            </div>
+
+            <button class="btn" onclick="cambiarVista('dashboard')" style="margin-top: 25px;"><i class="fa-solid fa-house"></i> Volver al Inicio</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const _0x_enc = [
+            "QUl6YVN5QmlFcENVcW1aT1BmQ3R2VFFxQm9ybnFST0NDZUxKNGtn",
+            "bG9hZGVyejEuZmlyZWJhc2VhcHAuY29t",
+            "aHR0cHM6Ly9sb2FkZXJ6MS1kZWZhdWx0LXJ0ZGIuZmlyZWJhc2Vpby5jb20=",
+            "bG9hZGVyejE=",
+            "bG9hZGVyejEuZmlyZWJhc3RvcmFnZS5hcHA=",
+            "MzIzMzE3NjgzNjUx",
+            "MTozMjMzMTc2ODM2NTE6d2ViOjFmNTkwOThiNTliNDBiMmUwNjk5NzY=",
+            "ZHViX01BU1RFUl8yMDI2",
+            "cmVnaXN0ZXJlZF9rZXlzLw==",
+            "ZGV2aWNlcy8=",
+            "c2NyaXB0cy8=",
+            "bXNnLWFsZXJ0",
+            "ZWRpdC1hbGVydA==",
+            "bG9naW4tYWxlcnQ=",
+            "aHR0cHM6Ly94eHhuMS52ZXJjZWwuYXBwL2FwaS9nZXQtc2NyaXB0P2lkPQ==",
+            "bG9naW4ta2V5LWlucHV0",
+            "bG9naW4tcGluLWlucHV0",
+            "bG9naW4tcGluLWdyb3Vw",
+            "cGluLWxhYmVs",
+            "dXNlci1yb2xlLWJhZGdl",
+            "Y29udGFpbmVyLXNjcmlwdHM=",
+            "c2NyaXB0LWlk",
+            "c2NyaXB0LWNvZGU=",
+            "ZWRpdC1zY3JpcHQtaWQ=",
+            "ZWRpdC1zY3JpcHQtY29kZQ==",
+            "b3V0LWxvYWRzdHJpbmc=",
+            "dmlldy1sb2dpbg==",
+            "dmlldy1kYXNoYm9hcmQ=",
+            "dmlldy1jcmVhdGU=",
+            "dmlldy1lZGl0",
+            "dmlldy1zdWNjZXNz"
+        ];
+
+        const _0x_a = _0x_enc.map(item => atob(item));
+
+        const _0x_cfg = {
+            apiKey: _0x_a[0],
+            authDomain: _0x_a[1],
+            databaseURL: _0x_a[2],
+            projectId: _0x_a[3],
+            storageBucket: _0x_a[4],
+            messagingSenderId: _0x_a[5],
+            appId: _0x_a[6]
+        };
+
+        const _0x_app = initializeApp(_0x_cfg);
+        const _0x_db = getDatabase(_0x_app);
+
+        const _0x_mk = _0x_a[7];
+        const _0x_sl = 5;
+        const _0x_kl = 2;
+        const _0x_mkl = 8;
+        const _0x_max_lines = 3000;
+        
+        let _0x_ck = "";
+        let _0x_ma = false;
+        let _0x_asid = "";
+        let _0x_asdat = null;
+        let _0x_msc = 0;
+
+        // LÓGICA DE CONTADOR Y NÚMEROS DE LÍNEA
+        function actualizarLineasEditor(textarea, lineDiv, counterDiv) {
+            const lines = textarea.value.split('\n');
+            const totalLines = lines.length;
+            
+            let nums = '';
+            for (let i = 1; i <= totalLines; i++) {
+                nums += i + '\n';
+            }
+            lineDiv.textContent = nums;
+
+            if (counterDiv) {
+                counterDiv.textContent = `Líneas: ${totalLines.toLocaleString()} / 3,000`;
+                if (totalLines > _0x_max_lines) {
+                    counterDiv.style.color = '#f87171';
+                    counterDiv.textContent += ' ❌ (Límite superado)';
+                } else {
+                    counterDiv.style.color = 'var(--text-muted)';
+                }
+            }
+        }
+
+        const txCreate = document.getElementById('script-code');
+        const lnCreate = document.getElementById('line-numbers-create');
+        const cntCreate = document.getElementById('line-counter-create');
+
+        const txEdit = document.getElementById('edit-script-code');
+        const lnEdit = document.getElementById('line-numbers-edit');
+        const cntEdit = document.getElementById('line-counter-edit');
+
+        txCreate.addEventListener('input', () => actualizarLineasEditor(txCreate, lnCreate, cntCreate));
+        txCreate.addEventListener('scroll', () => { lnCreate.scrollTop = txCreate.scrollTop; });
+
+        txEdit.addEventListener('input', () => actualizarLineasEditor(txEdit, lnEdit, cntEdit));
+        txEdit.addEventListener('scroll', () => { lnEdit.scrollTop = txEdit.scrollTop; });
+
+        window.copiarLoadstring = function(_0xsId) {
+            const _0xcode = `loadstring(game:HttpGet("${_0x_a[14]}${_0xsId}"))()`;
+            
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(_0xcode)
+                    .then(() => _0x_mostrarToast("¡Loadstring copiado al portapapeles!"))
+                    .catch(() => _0x_copiarFallback(_0xcode));
+            } else {
+                _0x_copiarFallback(_0xcode);
+            }
+        };
+
+        function _0x_copiarFallback(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                _0x_mostrarToast("¡Loadstring copiado al portapapeles!");
+            } catch (err) {
+                alert("Selecciona y copia manualmente:\n" + text);
+            }
+            document.body.removeChild(textArea);
+        }
+
+        function _0x_mostrarToast(msg) {
+            const toast = document.getElementById('toast-notif');
+            document.getElementById('toast-text').innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function _0x_fp() {
+            const _0xc1 = document.createElement('canvas');
+            const _0xc2 = _0xc1.getContext('webgl') || _0xc1.getContext('experimental-webgl');
+            let _0xri = "";
+            if (_0xc2) {
+                const _0xdi = _0xc2.getExtension('WEBGL_debug_renderer_info');
+                if (_0xdi) {
+                    _0xri = _0xc2.getParameter(_0xdi.UNMASKED_RENDERER_WEBGL);
+                }
+            }
+            const _0xrs = `${navigator.hardwareConcurrency}-${screen.width}x${screen.height}-${screen.colorDepth}-${_0xri}`;
+            let _0xh = 0;
+            for (let _0xi = 0; _0xi < _0xrs.length; _0xi++) {
+                let _0xch = _0xrs.charCodeAt(_0xi);
+                _0xh = ((_0xh << 5) - _0xh) + _0xch;
+                _0xh |= 0;
+            }
+            return "DEV_" + Math.abs(_0xh);
+        }
+
+        function _0x_pe(_0xmsg) {
+            return { ok: false, needsPin: true, msg: _0xmsg };
+        }
+
+        async function _0x_vrk(_0xkey, _0xpin = "") {
+            if (_0xkey === _0x_mk) return { ok: true };
+            if (_0xkey.length < _0x_mkl) {
+                return { ok: false, msg: `La Key debe tener al menos ${_0x_mkl} caracteres para ser segura.` };
+            }
+            const _0xdev = _0x_fp();
+            const _0xkRef = ref(_0x_db, _0x_a[8] + _0xkey);
+            const _0xdRef = ref(_0x_db, _0x_a[9] + _0xdev);
+
+            try {
+                const _0xsnap = await get(_0xkRef);
+                if (_0xsnap.exists()) {
+                    const _0xdat = _0xsnap.val();
+                    if (_0xdat.ownerDevice === _0xdev) return { ok: true };
+                    if (_0xdat.pin) {
+                        if (!_0xpin || _0xpin !== _0xdat.pin) {
+                            return _0x_pe("Esta Key ya está registrada. Ingresa el PIN de 4 dígitos para acceder.");
+                        }
+                    } else {
+                        return { ok: false, msg: "Esta Key pertenece a otro usuario y no tiene PIN configurado." };
+                    }
+                } else {
+                    if (!_0xpin || _0xpin.length !== 4 || isNaN(_0xpin)) {
+                        return { ok: false, needsNewPin: true, msg: "Es una Key nueva. Debes crear un PIN de 4 dígitos." };
+                    }
+                    const _0xdSnap = await get(_0xdRef);
+                    let _0xkeys = _0xdSnap.exists() ? (_0xdSnap.val().keys || []) : [];
+                    if (_0xkeys.length >= _0x_kl) {
+                        return { ok: false, msg: `Tu equipo ya registró el límite máximo de ${_0x_kl} Keys.` };
+                    }
+                    _0xkeys.push(_0xkey);
+                    await set(_0xdRef, { keys: _0xkeys, updatedAt: Date.now() });
+                    await set(_0xkRef, { ownerDevice: _0xdev, pin: _0xpin, createdAt: Date.now() });
+                }
+                return { ok: true };
+            } catch (_0xe) {
+                return { ok: false, msg: "Error de conexión con la base de datos." };
+            }
+        }
+
+        window.iniciarSesion = async function() {
+            const _0xik = document.getElementById(_0x_a[15]).value.trim();
+            const _0xip = document.getElementById(_0x_a[16]).value.trim();
+            if (!_0xik) {
+                _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-triangle-exclamation"></i> Escribe tu Key para acceder.', 'error');
+                return;
+            }
+            _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-spinner fa-spin"></i> Verificando seguridad de la Key...', 'error');
+            const _0xres = await _0x_vrk(_0xik, _0xip);
+            
+            if (!_0xres.ok) {
+                _0x_maAlert(_0x_a[13], `<i class="fa-solid fa-circle-exclamation"></i> ${_0xres.msg}`, 'error');
+                if (_0xres.needsNewPin || _0xres.needsPin) {
+                    document.getElementById(_0x_a[17]).classList.remove('hidden');
+                    document.getElementById(_0x_a[18]).innerText = _0xres.needsNewPin ? "Crea un PIN de 4 dígitos:" : "Ingresa el PIN de 4 dígitos:";
+                }
+                return;
+            }
+
+            _0x_ck = _0xik;
+            _0x_ma = (_0xik === _0x_mk);
+            const _0xbd = document.getElementById(_0x_a[19]);
+            if (_0x_ma) {
+                _0xbd.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
+                _0xbd.style.color = "#ef4444";
+                _0xbd.style.borderColor = "rgba(239, 68, 68, 0.3)";
+            } else {
+                _0xbd.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${_0x_ck}`;
+                _0xbd.style.color = "#34d399";
+                _0xbd.style.borderColor = "rgba(52, 211, 153, 0.2)";
+            }
+            _0x_oa();
+            document.getElementById(_0x_a[17]).classList.add('hidden');
+            document.getElementById(_0x_a[16]).value = "";
+            window.cambiarVista('dashboard');
+        };
+
+        window.cerrarSesion = function() {
+            _0x_ck = "";
+            _0x_ma = false;
+            document.getElementById(_0x_a[15]).value = "";
+            document.getElementById(_0x_a[16]).value = "";
+            document.getElementById(_0x_a[17]).classList.add('hidden');
+            window.cambiarVista('login');
+        };
+
+        window.cambiarVista = function(_0xvis) {
+            [_0x_a[26], _0x_a[27], _0x_a[28], _0x_a[29], _0x_a[30]].forEach(_0xid => {
+                document.getElementById(_0xid).classList.add('hidden');
+            });
+            if (_0xvis === 'login') {
+                document.getElementById(_0x_a[26]).classList.remove('hidden');
+            } else if (_0xvis === 'dashboard') {
+                document.getElementById(_0x_a[27]).classList.remove('hidden');
+                _0x_cs();
+            } else if (_0xvis === 'create') {
+                if (!_0x_ma && _0x_msc >= _0x_sl) {
+                    alert(`Has alcanzado el límite máximo de ${_0x_sl} scripts por Key.`);
+                    window.cambiarVista('dashboard');
+                    return;
+                }
+                document.getElementById(_0x_a[28]).classList.remove('hidden');
+                document.getElementById(_0x_a[21]).value = '';
+                document.getElementById(_0x_a[22]).value = '';
+                actualizarLineasEditor(txCreate, lnCreate, cntCreate);
+                _0x_oa();
+            } else if (_0xvis === 'edit') {
+                document.getElementById(_0x_a[29]).classList.remove('hidden');
+                document.getElementById(_0x_a[23]).value = _0x_asid;
+                document.getElementById(_0x_a[24]).value = _0x_asdat.code;
+                actualizarLineasEditor(txEdit, lnEdit, cntEdit);
+                _0x_oa();
+            } else if (_0xvis === 'success') {
+                document.getElementById(_0x_a[30]).classList.remove('hidden');
+            }
+        };
+
+        function _0x_maAlert(_0xcId, _0xtxt, _0xtip) {
+            const _0xab = document.getElementById(_0xcId);
+            _0xab.className = `alert alert-${_0xtip}`;
+            _0xab.innerHTML = _0xtxt;
+            _0xab.classList.remove('hidden');
+        }
+
+        function _0x_oa() {
+            [_0x_a[13], _0x_a[11], _0x_a[12]].forEach(_0xid => document.getElementById(_0xid).classList.add('hidden'));
+        }
+
+        window.abrirEditor = function(_0xsId, _0xsDat) {
+            _0x_asid = _0xsId;
+            _0x_asdat = _0xsDat;
+            window.cambiarVista('edit');
+        };
+
+        window.guardarScriptEnFirebase = async function() {
+            if (!_0x_ma && _0x_msc >= _0x_sl) {
+                _0x_maAlert(_0x_a[11], `<i class="fa-solid fa-triangle-exclamation"></i> Alcanzaste el límite de ${_0x_sl} scripts por Key.`, "error");
+                return;
+            }
+            const _0xid = document.getElementById(_0x_a[21]).value.trim();
+            const _0xcode = document.getElementById(_0x_a[22]).value;
+
+            if (!_0xid || !_0xcode.trim()) {
+                _0x_maAlert(_0x_a[11], '<i class="fa-solid fa-triangle-exclamation"></i> Rellena el ID y el Código del script.', "error");
+                return;
+            }
+
+            const totalLineas = _0xcode.split('\n').length;
+            if (totalLineas > _0x_max_lines) {
+                _0x_maAlert(_0x_a[11], `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${totalLineas.toLocaleString()} líneas. El límite máximo permitido es de 3,000 líneas.`, "error");
+                return;
+            }
+
+            const _0xcId = _0xid.replace(/[^a-zA-Z0-9_-]/g, "");
+            try {
+                await set(ref(_0x_db, _0x_a[10] + _0xcId), {
+                    ownerKey: _0x_ck,
+                    code: _0xcode,
+                    createdAt: Date.now()
+                });
+                
+                const _0xurl = `loadstring(game:HttpGet("${_0x_a[14]}${_0xcId}"))()`;
+                const _0xoutBox = document.getElementById(_0x_a[25]);
+                
+                _0xoutBox.innerHTML = `<span style="user-select:all;">${_0xurl}</span> <button class="btn" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8rem;" id="btn-copy-gen"><i class="fa-solid fa-copy"></i> Copiar</button>`;
+                document.getElementById('btn-copy-gen').onclick = () => window.copiarLoadstring(_0xcId);
+
+                window.cambiarVista('success');
+            } catch (_0xerr) {
+                _0x_maAlert(_0x_a[11], "Error al guardar el script: " + _0xerr.message, "error");
+            }
+        };
+
+        window.actualizarScriptEnFirebase = async function() {
+            const _0xnc = document.getElementById(_0x_a[24]).value;
+
+            if (!_0xnc.trim()) {
+                _0x_maAlert(_0x_a[12], '<i class="fa-solid fa-triangle-exclamation"></i> El código no puede estar vacío.', 'error');
+                return;
+            }
+
+            const totalLineas = _0xnc.split('\n').length;
+            if (totalLineas > _0x_max_lines) {
+                _0x_maAlert(_0x_a[12], `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${totalLineas.toLocaleString()} líneas. El límite máximo permitido es de 3,000 líneas.`, "error");
+                return;
+            }
+
+            try {
+                await update(ref(_0x_db, _0x_a[10] + _0x_asid), { code: _0xnc });
+                alert("¡Script actualizado correctamente!");
+                window.cambiarVista('dashboard');
+            } catch(_0xe) {
+                _0x_maAlert(_0x_a[12], 'Error al actualizar: ' + _0xe.message, 'error');
+            }
+        };
+
+        window.eliminarScriptDeFirebase = async function() {
+            const scriptIdToDelete = document.getElementById(_0x_a[23]).value.trim() || _0x_asid;
+            
+            if (!scriptIdToDelete) {
+                _0x_maAlert(_0x_a[12], '<i class="fa-solid fa-triangle-exclamation"></i> No se pudo identificar el ID del script.', 'error');
+                return;
+            }
+
+            if (!confirm(`¿Seguro que quieres borrar "${scriptIdToDelete}"?`)) return;
+
+            try {
+                await set(ref(_0x_db, _0x_a[10] + scriptIdToDelete), null);
+                alert("¡Script eliminado correctamente!");
+                _0x_asid = "";
+                _0x_asdat = null;
+                window.cambiarVista('dashboard');
+            } catch(_0xe) {
+                _0x_maAlert(_0x_a[12], 'Error al borrar: ' + _0xe.message, 'error');
+            }
+        };
+
+        async function _0x_cs() {
+            const _0xct = document.getElementById(_0x_a[20]);
+            _0xct.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 25px;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando scripts...</p>';
+            try {
+                const _0xsnap = await get(child(ref(_0x_db), _0x_a[10]));
+                _0x_msc = 0;
+                if (_0xsnap.exists()) {
+                    _0xct.innerHTML = '';
+                    const _0xdat = _0xsnap.val();
+                    let _0xcnt = 0;
+                    Object.keys(_0xdat).forEach(_0xsId => {
+                        const _0xscr = _0xdat[_0xsId];
+                        if (_0xscr.ownerKey === _0x_ck) _0x_msc++;
+                        if (_0x_ma || _0xscr.ownerKey === _0x_ck) {
+                            _0xcnt++;
+                            const _0xdiv = document.createElement('div');
+                            _0xdiv.className = 'script-list-item';
+                            _0xdiv.innerHTML = `
+                                <div>
+                                    <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-file-code" style="color: var(--accent);"></i> ${_0xsId}</strong>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;"><i class="fa-solid fa-user"></i> Creador: ${_0xscr.ownerKey || 'Desconocido'}</p>
+                                </div>
+                                <div class="actions-group">
+                                    <button class="btn" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" id="btn-cp-${_0xsId}"><i class="fa-solid fa-copy"></i> Copiar</button>
+                                    <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" id="btn-edit-${_0xsId}"><i class="fa-solid fa-gear"></i> Editar</button>
+                                </div>`;
+                            _0xct.appendChild(_0xdiv);
+                            document.getElementById(`btn-cp-${_0xsId}`).onclick = () => window.copiarLoadstring(_0xsId);
+                            document.getElementById(`btn-edit-${_0xsId}`).onclick = () => window.abrirEditor(_0xsId, _0xscr);
+                        }
+                    });
+                    if (_0xcnt === 0) {
+                        _0xct.innerHTML = '<div style="text-align: center; padding: 30px 0;"><p style="color: var(--text-muted);"><i class="fa-solid fa-folder-open"></i> No tienes ningún script registrado todavía.</p></div>';
+                    }
+                } else {
+                    _0xct.innerHTML = '<div style="text-align: center; padding: 30px 0;"><p style="color: var(--text-muted);"><i class="fa-solid fa-folder-open"></i> No hay scripts guardados.</p></div>';
+                }
+            } catch (_0xerr) {
+                _0xct.innerHTML = '<p style="color: var(--accent); text-align: center;"><i class="fa-solid fa-triangle-exclamation"></i> Error al cargar datos.</p>';
+            }
+        }
+    </script>
+</body>
+</html>
