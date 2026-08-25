@@ -555,7 +555,7 @@
             "bXNnLWFsZXJ0",
             "ZWRpdC1hbGVydA==",
             "bG9naW4tYWxlcnQ=",
-            "aHR0cHM6Ly96cHJvdGVjdG9yLnZlcmNlbC5hcHAvYXBpL2dldC1zY3JpcHQ=", /* <-- Actualizado con el nuevo dominio */
+            "aHR0cHM6Ly96cHJvdGVjdG9yLnZlcmNlbC5hcHAvYXBpL2dldC1zY3JpcHQ=",
             "bG9naW4ta2V5LWlucHV0",
             "bG9naW4tcGluLWlucHV0",
             "bG9naW4tcGluLWdyb3Vw",
@@ -638,7 +638,8 @@
         txEdit.addEventListener('scroll', () => { lnEdit.scrollTop = txEdit.scrollTop; });
 
         window.copiarLoadstring = function(_0xsId) {
-            const _0xcode = `loadstring(game:HttpGet("${_0x_a[14]}${_0xsId}"))()`;
+            // FIX APLICADO AQUÍ: Añadido ?id= antes del id del script
+            const _0xcode = `loadstring(game:HttpGet("${_0x_a[14]}?id=${_0xsId}"))()`;
             
             if (navigator.clipboard && window.isSecureContext) {
                 navigator.clipboard.writeText(_0xcode)
@@ -858,7 +859,8 @@
                     createdAt: Date.now()
                 });
                 
-                const _0xurl = `loadstring(game:HttpGet("${_0x_a[14]}${_0xcId}"))()`;
+                // FIX APLICADO AQUÍ: Añadido ?id= antes del id del script recién guardado
+                const _0xurl = `loadstring(game:HttpGet("${_0x_a[14]}?id=${_0xcId}"))()`;
                 const _0xoutBox = document.getElementById(_0x_a[25]);
                 
                 _0xoutBox.innerHTML = `<span style="user-select:all;">${_0xurl}</span> <button class="btn" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8rem;" id="btn-copy-gen"><i class="fa-solid fa-copy"></i> Copiar</button>`;
