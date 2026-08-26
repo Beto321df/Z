@@ -347,6 +347,7 @@
             font-weight: 600;
         }
         .alert-error { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+        .alert-info { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
         
         .user-badge {
             display: inline-flex;
@@ -463,7 +464,7 @@
                 </div>
             </div>
 
-            <button id="auth-action-btn" class="btn" onclick="ejecutarAuth()">
+            <button id="auth-action-btn" type="button" class="btn">
                 <i class="fa-solid fa-right-to-bracket"></i> Entrar
             </button>
         </div>
@@ -480,8 +481,8 @@
                 <p style="color: var(--text-muted); text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando scripts...</p>
             </div>
 
-            <button class="btn" onclick="cambiarVista('create')"><i class="fa-solid fa-plus"></i> Crear Nuevo Script / Loader</button>
-            <button class="btn btn-secondary" onclick="cerrarSesion()"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button>
+            <button id="btn-goto-create" type="button" class="btn"><i class="fa-solid fa-plus"></i> Crear Nuevo Script / Loader</button>
+            <button id="btn-logout" type="button" class="btn btn-secondary"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button>
         </div>
 
         <!-- VISTA 2: CREAR SCRIPT -->
@@ -508,8 +509,8 @@
                 <div class="line-counter-info" id="line-counter-create">Líneas: 1 / 3,000</div>
             </div>
 
-            <button class="btn" onclick="guardarScriptEnFirebase()"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar Script</button>
-            <button class="btn btn-secondary" onclick="cambiarVista('dashboard')"><i class="fa-solid fa-arrow-left"></i> Regresar</button>
+            <button id="btn-save-script" type="button" class="btn"><i class="fa-solid fa-cloud-arrow-up"></i> Guardar Script</button>
+            <button id="btn-back-create" type="button" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Regresar</button>
         </div>
 
         <!-- VISTA 3: EDITAR / ELIMINAR SCRIPT -->
@@ -536,9 +537,9 @@
                 <div class="line-counter-info" id="line-counter-edit">Líneas: 1 / 3,000</div>
             </div>
 
-            <button class="btn" onclick="actualizarScriptEnFirebase()"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
-            <button class="btn btn-danger" onclick="eliminarScriptDeFirebase()"><i class="fa-solid fa-trash-can"></i> Eliminar Script</button>
-            <button class="btn btn-secondary" onclick="cambiarVista('dashboard')"><i class="fa-solid fa-arrow-left"></i> Volver al Dashboard</button>
+            <button id="btn-update-script" type="button" class="btn"><i class="fa-solid fa-floppy-disk"></i> Guardar Cambios</button>
+            <button id="btn-delete-script" type="button" class="btn btn-danger"><i class="fa-solid fa-trash-can"></i> Eliminar Script</button>
+            <button id="btn-back-edit" type="button" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Volver al Dashboard</button>
         </div>
 
         <!-- VISTA 4: ÉXITO -->
@@ -553,7 +554,7 @@
                 <div class="output-box" id="out-loadstring">Cargando...</div>
             </div>
 
-            <button class="btn" onclick="cambiarVista('dashboard')" style="margin-top: 25px;"><i class="fa-solid fa-house"></i> Volver al Inicio</button>
+            <button id="btn-back-success" type="button" class="btn" style="margin-top: 25px;"><i class="fa-solid fa-house"></i> Volver al Inicio</button>
         </div>
     </div>
 
@@ -624,7 +625,7 @@
         let currentAuthMode = 'signin';
 
         // PESTAÑAS DE AUTENTICACIÓN
-        window.toggleAuthTab = function(mode) {
+        function toggleAuthTab(mode) {
             currentAuthMode = mode;
             const btnSignIn = document.getElementById('tab-signin-btn');
             const btnSignUp = document.getElementById('tab-signup-btn');
@@ -647,20 +648,23 @@
                 desc.textContent = 'Crea tu usuario, contraseña y asigna tu PIN de 4 dígitos.';
                 actionBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Registrarse';
             }
-        };
+        }
 
-        // Event listeners directos para asegurar funcionalidad
-        document.getElementById('tab-signin-btn').addEventListener('click', () => window.toggleAuthTab('signin'));
-        document.getElementById('tab-signup-btn').addEventListener('click', () => window.toggleAuthTab('signup'));
-
-        // LÓGICA DE REGISTRO / INICIO DE SESIÓN
-        window.ejecutarAuth = async function() {
-            const user = document.getElementById('auth-user-input').value.trim();
+        // REGISTRO / LOGIN
+        async function ejecutarAuth() {
+            const rawUser = document.getElementById('auth-user-input').value.trim();
             const pass = document.getElementById('auth-pass-input').value.trim();
             const pin = document.getElementById('auth-pin-input').value.trim();
 
-            if (!user || !pass || !pin) {
+            if (!rawUser || !pass || !pin) {
                 _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-triangle-exclamation"></i> Completa todos los campos.', 'error');
+                return;
+            }
+
+            // Sanitizar nombre de usuario para evitar errores de ruta en Firebase
+            const user = rawUser.replace(/[^a-zA-Z0-9_-]/g, "");
+            if (user !== rawUser) {
+                _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-triangle-exclamation"></i> El usuario solo permite letras, números, _ y - (sin espacios).', 'error');
                 return;
             }
 
@@ -673,10 +677,9 @@
             const userRef = ref(_0x_db, `registered_keys/${user}`);
             const devRef = ref(_0x_db, `devices/${dev}`);
 
-            _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-spinner fa-spin"></i> Procesando solicitud...', 'error');
+            _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-spinner fa-spin"></i> Procesando solicitud...', 'info');
 
             if (currentAuthMode === 'signup') {
-                // REGISTRO
                 try {
                     const snap = await get(userRef);
                     if (snap.exists()) {
@@ -685,7 +688,12 @@
                     }
 
                     const dSnap = await get(devRef);
-                    let keys = dSnap.exists() ? (dSnap.val().keys || []) : [];
+                    let keys = [];
+                    if (dSnap.exists() && dSnap.val().keys) {
+                        const rawKeys = dSnap.val().keys;
+                        keys = Array.isArray(rawKeys) ? rawKeys : Object.values(rawKeys);
+                    }
+
                     if (keys.length >= _0x_kl) {
                         _0x_maAlert(_0x_a[13], `<i class="fa-solid fa-ban"></i> Tu dispositivo alcanzó el límite de ${_0x_kl} cuentas.`, 'error');
                         return;
@@ -696,12 +704,12 @@
                     await set(userRef, { password: pass, pin: pin, ownerDevice: dev, createdAt: Date.now() });
 
                     alert("¡Cuenta creada exitosamente! Ahora puedes iniciar sesión.");
-                    window.toggleAuthTab('signin');
+                    toggleAuthTab('signin');
                 } catch (e) {
-                    _0x_maAlert(_0x_a[13], 'Error de conexión con la base de datos.', 'error');
+                    console.error("Error Firebase Auth:", e);
+                    _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-xmark"></i> Error: ' + e.message, 'error');
                 }
             } else {
-                // LOGIN
                 try {
                     const snap = await get(userRef);
                     if (!snap.exists()) {
@@ -729,14 +737,15 @@
                         badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
                     }
                     
-                    window.cambiarVista('dashboard');
+                    cambiarVista('dashboard');
                 } catch (e) {
-                    _0x_maAlert(_0x_a[13], 'Error de conexión.', 'error');
+                    console.error("Error Login:", e);
+                    _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-xmark"></i> Error: ' + e.message, 'error');
                 }
             }
-        };
+        }
 
-        // LÓGICA DE CONTADOR Y NÚMEROS DE LÍNEA
+        // LÍNEAS Y CONTADOR
         function actualizarLineasEditor(textarea, lineDiv, counterDiv) {
             const lines = textarea.value.split('\n');
             const totalLines = lines.length;
@@ -772,7 +781,7 @@
         txEdit.addEventListener('input', () => actualizarLineasEditor(txEdit, lnEdit, cntEdit));
         txEdit.addEventListener('scroll', () => { lnEdit.scrollTop = txEdit.scrollTop; });
 
-        window.copiarLoadstring = function(_0xsId) {
+        function copiarLoadstring(_0xsId) {
             const _0xcode = `loadstring(game:HttpGet("${_0x_a[14]}?id=${_0xsId}"))()`;
             
             if (navigator.clipboard && window.isSecureContext) {
@@ -782,7 +791,7 @@
             } else {
                 _0x_copiarFallback(_0xcode);
             }
-        };
+        }
 
         function _0x_copiarFallback(text) {
             const textArea = document.createElement("textarea");
@@ -828,17 +837,17 @@
             return "DEV_" + Math.abs(_0xh);
         }
 
-        window.cerrarSesion = function() {
+        function cerrarSesion() {
             _0x_ck = "";
             _0x_ma = false;
             document.getElementById('auth-user-input').value = "";
             document.getElementById('auth-pass-input').value = "";
             document.getElementById('auth-pin-input').value = "";
-            window.toggleAuthTab('signin');
-            window.cambiarVista('login');
-        };
+            toggleAuthTab('signin');
+            cambiarVista('login');
+        }
 
-        window.cambiarVista = function(_0xvis) {
+        function cambiarVista(_0xvis) {
             [_0x_a[26], _0x_a[27], _0x_a[28], _0x_a[29], _0x_a[30]].forEach(_0xid => {
                 document.getElementById(_0xid).classList.add('hidden');
             });
@@ -850,7 +859,7 @@
             } else if (_0xvis === 'create') {
                 if (!_0x_ma && _0x_msc >= _0x_sl) {
                     alert(`Has alcanzado el límite máximo de ${_0x_sl} scripts por cuenta.`);
-                    window.cambiarVista('dashboard');
+                    cambiarVista('dashboard');
                     return;
                 }
                 document.getElementById(_0x_a[28]).classList.remove('hidden');
@@ -867,7 +876,7 @@
             } else if (_0xvis === 'success') {
                 document.getElementById(_0x_a[30]).classList.remove('hidden');
             }
-        };
+        }
 
         function _0x_maAlert(_0xcId, _0xtxt, _0xtip) {
             const _0xab = document.getElementById(_0xcId);
@@ -880,13 +889,13 @@
             [_0x_a[13], _0x_a[11], _0x_a[12]].forEach(_0xid => document.getElementById(_0xid).classList.add('hidden'));
         }
 
-        window.abrirEditor = function(_0xsId, _0xsDat) {
+        function abrirEditor(_0xsId, _0xsDat) {
             _0x_asid = _0xsId;
             _0x_asdat = _0xsDat;
-            window.cambiarVista('edit');
-        };
+            cambiarVista('edit');
+        }
 
-        window.guardarScriptEnFirebase = async function() {
+        async function guardarScriptEnFirebase() {
             if (!_0x_ma && _0x_msc >= _0x_sl) {
                 _0x_maAlert(_0x_a[11], `<i class="fa-solid fa-triangle-exclamation"></i> Alcanzaste el límite de ${_0x_sl} scripts por cuenta.`, "error");
                 return;
@@ -917,15 +926,15 @@
                 const _0xoutBox = document.getElementById(_0x_a[25]);
                 
                 _0xoutBox.innerHTML = `<span style="user-select:all;">${_0xurl}</span> <button class="btn" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8rem;" id="btn-copy-gen"><i class="fa-solid fa-copy"></i> Copiar</button>`;
-                document.getElementById('btn-copy-gen').onclick = () => window.copiarLoadstring(_0xcId);
+                document.getElementById('btn-copy-gen').onclick = () => copiarLoadstring(_0xcId);
 
-                window.cambiarVista('success');
+                cambiarVista('success');
             } catch (_0xerr) {
                 _0x_maAlert(_0x_a[11], "Error al guardar el script: " + _0xerr.message, "error");
             }
-        };
+        }
 
-        window.actualizarScriptEnFirebase = async function() {
+        async function actualizarScriptEnFirebase() {
             const _0xnc = document.getElementById(_0x_a[24]).value;
 
             if (!_0xnc.trim()) {
@@ -942,13 +951,13 @@
             try {
                 await update(ref(_0x_db, _0x_a[10] + _0x_asid), { code: _0xnc });
                 alert("¡Script actualizado correctamente!");
-                window.cambiarVista('dashboard');
+                cambiarVista('dashboard');
             } catch(_0xe) {
                 _0x_maAlert(_0x_a[12], 'Error al actualizar: ' + _0xe.message, 'error');
             }
-        };
+        }
 
-        window.eliminarScriptDeFirebase = async function() {
+        async function eliminarScriptDeFirebase() {
             const scriptIdToDelete = document.getElementById(_0x_a[23]).value.trim() || _0x_asid;
             
             if (!scriptIdToDelete) {
@@ -963,11 +972,11 @@
                 alert("¡Script eliminado correctamente!");
                 _0x_asid = "";
                 _0x_asdat = null;
-                window.cambiarVista('dashboard');
+                cambiarVista('dashboard');
             } catch(_0xe) {
                 _0x_maAlert(_0x_a[12], 'Error al borrar: ' + _0xe.message, 'error');
             }
-        };
+        }
 
         async function _0x_cs() {
             const _0xct = document.getElementById(_0x_a[20]);
@@ -996,8 +1005,8 @@
                                     <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" id="btn-edit-${_0xsId}"><i class="fa-solid fa-gear"></i> Editar</button>
                                 </div>`;
                             _0xct.appendChild(_0xdiv);
-                            document.getElementById(`btn-cp-${_0xsId}`).onclick = () => window.copiarLoadstring(_0xsId);
-                            document.getElementById(`btn-edit-${_0xsId}`).onclick = () => window.abrirEditor(_0xsId, _0xscr);
+                            document.getElementById(`btn-cp-${_0xsId}`).onclick = () => copiarLoadstring(_0xsId);
+                            document.getElementById(`btn-edit-${_0xsId}`).onclick = () => abrirEditor(_0xsId, _0xscr);
                         }
                     });
                     if (_0xcnt === 0) {
@@ -1010,6 +1019,19 @@
                 _0xct.innerHTML = '<p style="color: var(--accent); text-align: center;"><i class="fa-solid fa-triangle-exclamation"></i> Error al cargar datos.</p>';
             }
         }
+
+        // VINCULACIÓN DIRECTA DE EVENTOS DE BOTONES
+        document.getElementById('tab-signin-btn').addEventListener('click', () => toggleAuthTab('signin'));
+        document.getElementById('tab-signup-btn').addEventListener('click', () => toggleAuthTab('signup'));
+        document.getElementById('auth-action-btn').addEventListener('click', ejecutarAuth);
+        document.getElementById('btn-goto-create').addEventListener('click', () => cambiarVista('create'));
+        document.getElementById('btn-logout').addEventListener('click', cerrarSesion);
+        document.getElementById('btn-save-script').addEventListener('click', guardarScriptEnFirebase);
+        document.getElementById('btn-back-create').addEventListener('click', () => cambiarVista('dashboard'));
+        document.getElementById('btn-update-script').addEventListener('click', actualizarScriptEnFirebase);
+        document.getElementById('btn-delete-script').addEventListener('click', eliminarScriptDeFirebase);
+        document.getElementById('btn-back-edit').addEventListener('click', () => cambiarVista('dashboard'));
+        document.getElementById('btn-back-success').addEventListener('click', () => cambiarVista('dashboard'));
     </script>
 </body>
 </html>
