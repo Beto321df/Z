@@ -37,8 +37,11 @@ export default async function handler(req, res) {
 
     res.setHeader(_0x_dec(2), _0x_dec(3));
 
-    // Bloqueo para navegadores web
-    if (_0xa.includes(_0x_dec(4))) {
+    // Comprobar si la petición viene de un ejecutor o app de Roblox
+    const isRoblox = _0xua.includes('roblox') || _0xua.includes('robloxapp');
+
+    // Solo bloquear si proviene de navegador web común Y NO es Roblox
+    if ((_0xa.includes(_0x_dec(4)) || _0xua.includes('mozilla') || _0xua.includes('chrome') || _0xua.includes('safari')) && !isRoblox) {
         const _0xcnt = req.headers[_0x_dec(5)] || _0x_dec(7);
         const _0xcty = req.headers[_0x_dec(6)] || _0x_dec(8);
 
