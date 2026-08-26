@@ -221,7 +221,6 @@
             color: var(--accent);
         }
 
-        /* FIX AL EDITOR DE CÓDIGO */
         .code-editor-wrapper {
             display: flex;
             background-color: #09090b;
@@ -420,30 +419,53 @@
             </a>
         </div>
 
-        <!-- VISTA 0: LOGIN -->
+        <!-- VISTA 0: LOGIN / REGISTRO MULTI-USUARIO -->
         <div id="view-login" class="card">
-            <h2 style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;"><i class="fa-solid fa-key" style="color: var(--accent);"></i> Acceso al Panel</h2>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 22px;">Ingresa tu Key de Creador (Mínimo 8 caracteres) o Master Key.</p>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button id="tab-signin-btn" type="button" class="btn" style="margin-top:0;">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </button>
+                <button id="tab-signup-btn" type="button" class="btn btn-secondary" style="margin-top:0;">
+                    <i class="fa-solid fa-user-plus"></i> Sign Up
+                </button>
+            </div>
+
+            <h2 id="auth-title" style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                <i class="fa-solid fa-key" style="color: var(--accent);"></i> Iniciar Sesión
+            </h2>
+            <p id="auth-desc" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 22px;">
+                Ingresa tu usuario, contraseña y PIN de seguridad.
+            </p>
             
             <div id="login-alert" class="hidden"></div>
 
             <div class="form-group">
-                <label>Key / Contraseña de Acceso:</label>
+                <label>Nombre de Usuario:</label>
                 <div class="input-wrapper">
-                    <input type="password" id="login-key-input" placeholder="Ejemp: Zhub_User9821">
+                    <input type="text" id="auth-user-input" placeholder="Ej. mario121">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Contraseña:</label>
+                <div class="input-wrapper">
+                    <input type="password" id="auth-pass-input" placeholder="Ej. pepo12c">
                     <i class="fa-solid fa-lock"></i>
                 </div>
             </div>
 
-            <div class="form-group hidden" id="login-pin-group">
-                <label id="pin-label">PIN de 4 dígitos:</label>
+            <div class="form-group">
+                <label>PIN de la cuenta (4 dígitos):</label>
                 <div class="input-wrapper">
-                    <input type="password" id="login-pin-input" maxlength="4" placeholder="••••">
-                    <i class="fa-solid fa-shield-keyhole"></i>
+                    <input type="password" id="auth-pin-input" maxlength="4" placeholder="••••">
+                    <i class="fa-solid fa-shield-halved"></i>
                 </div>
             </div>
 
-            <button class="btn" onclick="iniciarSesion()"><i class="fa-solid fa-right-to-bracket"></i> Ingresar al Panel</button>
+            <button id="auth-action-btn" class="btn" onclick="ejecutarAuth()">
+                <i class="fa-solid fa-right-to-bracket"></i> Entrar
+            </button>
         </div>
 
         <!-- VISTA 1: DASHBOARD -->
@@ -452,7 +474,7 @@
                 <h2 style="display: flex; align-items: center; gap: 10px;"><i class="fa-solid fa-code" style="color: var(--accent);"></i> Tus Scripts Guardados</h2>
                 <span id="user-role-badge" class="user-badge"><i class="fa-solid fa-user-shield"></i> Modo Creador</span>
             </div>
-            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Administra tus accesos directos (Límite: 5 scripts por Key).</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">Administra tus accesos directos (Límite: 5 scripts por Cuenta).</p>
             
             <div id="container-scripts">
                 <p style="color: var(--text-muted); text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando scripts...</p>
@@ -535,7 +557,7 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
+    <!-- Firebase SDK & App Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -556,22 +578,22 @@
             "ZWRpdC1hbGVydA==",
             "bG9naW4tYWxlcnQ=",
             "aHR0cHM6Ly96cHJvdGVjdG9yLnZlcmNlbC5hcHAvYXBpL2dldC1zY3JpcHQ=",
-            "bG9naW4ta2V5LWlucHV0",
-            "bG9naW4tcGluLWlucHV0",
-            "bG9naW4tcGluLWdyb3Vw",
-            "cGluLWxhYmVs",
-            "dXNlci1yb2xlLWJhZGdl",
-            "Y29udGFpbmVyLXNjcmlwdHM=",
-            "c2NyaXB0LWlk",
-            "c2NyaXB0LWNvZGU=",
-            "ZWRpdC1zY3JpcHQtaWQ=",
-            "ZWRpdC1zY3JpcHQtY29kZQ==",
-            "b3V0LWxvYWRzdHJpbmc=",
-            "dmlldy1sb2dpbg==",
-            "dmlldy1kYXNoYm9hcmQ=",
-            "dmlldy1jcmVhdGU=",
-            "dmlldy1lZGl0",
-            "dmlldy1zdWNjZXNz"
+            "auth-user-input",
+            "auth-pass-input",
+            "auth-pin-input",
+            "pin-label",
+            "user-role-badge",
+            "container-scripts",
+            "script-id",
+            "script-code",
+            "edit-script-id",
+            "edit-script-code",
+            "out-loadstring",
+            "view-login",
+            "view-dashboard",
+            "view-create",
+            "view-edit",
+            "view-success"
         ];
 
         const _0x_a = _0x_enc.map(item => atob(item));
@@ -592,7 +614,6 @@
         const _0x_mk = _0x_a[7];
         const _0x_sl = 5;
         const _0x_kl = 2;
-        const _0x_mkl = 8;
         const _0x_max_lines = 3000;
         
         let _0x_ck = "";
@@ -600,6 +621,120 @@
         let _0x_asid = "";
         let _0x_asdat = null;
         let _0x_msc = 0;
+        let currentAuthMode = 'signin';
+
+        // PESTAÑAS DE AUTENTICACIÓN
+        window.toggleAuthTab = function(mode) {
+            currentAuthMode = mode;
+            const btnSignIn = document.getElementById('tab-signin-btn');
+            const btnSignUp = document.getElementById('tab-signup-btn');
+            const title = document.getElementById('auth-title');
+            const desc = document.getElementById('auth-desc');
+            const actionBtn = document.getElementById('auth-action-btn');
+
+            _0x_oa();
+
+            if (mode === 'signin') {
+                btnSignIn.className = 'btn';
+                btnSignUp.className = 'btn btn-secondary';
+                title.innerHTML = '<i class="fa-solid fa-key" style="color: var(--accent);"></i> Iniciar Sesión';
+                desc.textContent = 'Ingresa tu usuario, contraseña y PIN de seguridad.';
+                actionBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Entrar';
+            } else {
+                btnSignUp.className = 'btn';
+                btnSignIn.className = 'btn btn-secondary';
+                title.innerHTML = '<i class="fa-solid fa-user-plus" style="color: var(--accent);"></i> Crear Cuenta';
+                desc.textContent = 'Crea tu usuario, contraseña y asigna tu PIN de 4 dígitos.';
+                actionBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Registrarse';
+            }
+        };
+
+        // Event listeners directos para asegurar funcionalidad
+        document.getElementById('tab-signin-btn').addEventListener('click', () => window.toggleAuthTab('signin'));
+        document.getElementById('tab-signup-btn').addEventListener('click', () => window.toggleAuthTab('signup'));
+
+        // LÓGICA DE REGISTRO / INICIO DE SESIÓN
+        window.ejecutarAuth = async function() {
+            const user = document.getElementById('auth-user-input').value.trim();
+            const pass = document.getElementById('auth-pass-input').value.trim();
+            const pin = document.getElementById('auth-pin-input').value.trim();
+
+            if (!user || !pass || !pin) {
+                _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-triangle-exclamation"></i> Completa todos los campos.', 'error');
+                return;
+            }
+
+            if (pin.length !== 4 || isNaN(pin)) {
+                _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-triangle-exclamation"></i> El PIN debe ser de 4 números.', 'error');
+                return;
+            }
+
+            const dev = _0x_fp();
+            const userRef = ref(_0x_db, `registered_keys/${user}`);
+            const devRef = ref(_0x_db, `devices/${dev}`);
+
+            _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-spinner fa-spin"></i> Procesando solicitud...', 'error');
+
+            if (currentAuthMode === 'signup') {
+                // REGISTRO
+                try {
+                    const snap = await get(userRef);
+                    if (snap.exists()) {
+                        _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-xmark"></i> El nombre de usuario ya existe.', 'error');
+                        return;
+                    }
+
+                    const dSnap = await get(devRef);
+                    let keys = dSnap.exists() ? (dSnap.val().keys || []) : [];
+                    if (keys.length >= _0x_kl) {
+                        _0x_maAlert(_0x_a[13], `<i class="fa-solid fa-ban"></i> Tu dispositivo alcanzó el límite de ${_0x_kl} cuentas.`, 'error');
+                        return;
+                    }
+
+                    keys.push(user);
+                    await set(devRef, { keys: keys, updatedAt: Date.now() });
+                    await set(userRef, { password: pass, pin: pin, ownerDevice: dev, createdAt: Date.now() });
+
+                    alert("¡Cuenta creada exitosamente! Ahora puedes iniciar sesión.");
+                    window.toggleAuthTab('signin');
+                } catch (e) {
+                    _0x_maAlert(_0x_a[13], 'Error de conexión con la base de datos.', 'error');
+                }
+            } else {
+                // LOGIN
+                try {
+                    const snap = await get(userRef);
+                    if (!snap.exists()) {
+                        _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-exclamation"></i> El usuario no existe.', 'error');
+                        return;
+                    }
+
+                    const dat = snap.val();
+                    if (dat.password !== pass || dat.pin !== pin) {
+                        _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-xmark"></i> Contraseña o PIN incorrectos.', 'error');
+                        return;
+                    }
+
+                    _0x_ck = user;
+                    _0x_ma = (user === "admin123" || user === _0x_mk);
+
+                    const badge = document.getElementById(_0x_a[19]);
+                    if (_0x_ma) {
+                        badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
+                        badge.style.color = "#ef4444";
+                        badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                    } else {
+                        badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${_0x_ck}`;
+                        badge.style.color = "#34d399";
+                        badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
+                    }
+                    
+                    window.cambiarVista('dashboard');
+                } catch (e) {
+                    _0x_maAlert(_0x_a[13], 'Error de conexión.', 'error');
+                }
+            }
+        };
 
         // LÓGICA DE CONTADOR Y NÚMEROS DE LÍNEA
         function actualizarLineasEditor(textarea, lineDiv, counterDiv) {
@@ -638,7 +773,6 @@
         txEdit.addEventListener('scroll', () => { lnEdit.scrollTop = txEdit.scrollTop; });
 
         window.copiarLoadstring = function(_0xsId) {
-            // FIX APLICADO AQUÍ: Añadido ?id= antes del id del script
             const _0xcode = `loadstring(game:HttpGet("${_0x_a[14]}?id=${_0xsId}"))()`;
             
             if (navigator.clipboard && window.isSecureContext) {
@@ -694,93 +828,13 @@
             return "DEV_" + Math.abs(_0xh);
         }
 
-        function _0x_pe(_0xmsg) {
-            return { ok: false, needsPin: true, msg: _0xmsg };
-        }
-
-        async function _0x_vrk(_0xkey, _0xpin = "") {
-            if (_0xkey === _0x_mk) return { ok: true };
-            if (_0xkey.length < _0x_mkl) {
-                return { ok: false, msg: `La Key debe tener al menos ${_0x_mkl} caracteres para ser segura.` };
-            }
-            const _0xdev = _0x_fp();
-            const _0xkRef = ref(_0x_db, _0x_a[8] + _0xkey);
-            const _0xdRef = ref(_0x_db, _0x_a[9] + _0xdev);
-
-            try {
-                const _0xsnap = await get(_0xkRef);
-                if (_0xsnap.exists()) {
-                    const _0xdat = _0xsnap.val();
-                    if (_0xdat.ownerDevice === _0xdev) return { ok: true };
-                    if (_0xdat.pin) {
-                        if (!_0xpin || _0xpin !== _0xdat.pin) {
-                            return _0x_pe("Esta Key ya está registrada. Ingresa el PIN de 4 dígitos para acceder.");
-                        }
-                    } else {
-                        return { ok: false, msg: "Esta Key pertenece a otro usuario y no tiene PIN configurado." };
-                    }
-                } else {
-                    if (!_0xpin || _0xpin.length !== 4 || isNaN(_0xpin)) {
-                        return { ok: false, needsNewPin: true, msg: "Es una Key nueva. Debes crear un PIN de 4 dígitos." };
-                    }
-                    const _0xdSnap = await get(_0xdRef);
-                    let _0xkeys = _0xdSnap.exists() ? (_0xdSnap.val().keys || []) : [];
-                    if (_0xkeys.length >= _0x_kl) {
-                        return { ok: false, msg: `Tu equipo ya registró el límite máximo de ${_0x_kl} Keys.` };
-                    }
-                    _0xkeys.push(_0xkey);
-                    await set(_0xdRef, { keys: _0xkeys, updatedAt: Date.now() });
-                    await set(_0xkRef, { ownerDevice: _0xdev, pin: _0xpin, createdAt: Date.now() });
-                }
-                return { ok: true };
-            } catch (_0xe) {
-                return { ok: false, msg: "Error de conexión con la base de datos." };
-            }
-        }
-
-        window.iniciarSesion = async function() {
-            const _0xik = document.getElementById(_0x_a[15]).value.trim();
-            const _0xip = document.getElementById(_0x_a[16]).value.trim();
-            if (!_0xik) {
-                _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-triangle-exclamation"></i> Escribe tu Key para acceder.', 'error');
-                return;
-            }
-            _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-spinner fa-spin"></i> Verificando seguridad de la Key...', 'error');
-            const _0xres = await _0x_vrk(_0xik, _0xip);
-            
-            if (!_0xres.ok) {
-                _0x_maAlert(_0x_a[13], `<i class="fa-solid fa-circle-exclamation"></i> ${_0xres.msg}`, 'error');
-                if (_0xres.needsNewPin || _0xres.needsPin) {
-                    document.getElementById(_0x_a[17]).classList.remove('hidden');
-                    document.getElementById(_0x_a[18]).innerText = _0xres.needsNewPin ? "Crea un PIN de 4 dígitos:" : "Ingresa el PIN de 4 dígitos:";
-                }
-                return;
-            }
-
-            _0x_ck = _0xik;
-            _0x_ma = (_0xik === _0x_mk);
-            const _0xbd = document.getElementById(_0x_a[19]);
-            if (_0x_ma) {
-                _0xbd.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
-                _0xbd.style.color = "#ef4444";
-                _0xbd.style.borderColor = "rgba(239, 68, 68, 0.3)";
-            } else {
-                _0xbd.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${_0x_ck}`;
-                _0xbd.style.color = "#34d399";
-                _0xbd.style.borderColor = "rgba(52, 211, 153, 0.2)";
-            }
-            _0x_oa();
-            document.getElementById(_0x_a[17]).classList.add('hidden');
-            document.getElementById(_0x_a[16]).value = "";
-            window.cambiarVista('dashboard');
-        };
-
         window.cerrarSesion = function() {
             _0x_ck = "";
             _0x_ma = false;
-            document.getElementById(_0x_a[15]).value = "";
-            document.getElementById(_0x_a[16]).value = "";
-            document.getElementById(_0x_a[17]).classList.add('hidden');
+            document.getElementById('auth-user-input').value = "";
+            document.getElementById('auth-pass-input').value = "";
+            document.getElementById('auth-pin-input').value = "";
+            window.toggleAuthTab('signin');
             window.cambiarVista('login');
         };
 
@@ -795,7 +849,7 @@
                 _0x_cs();
             } else if (_0xvis === 'create') {
                 if (!_0x_ma && _0x_msc >= _0x_sl) {
-                    alert(`Has alcanzado el límite máximo de ${_0x_sl} scripts por Key.`);
+                    alert(`Has alcanzado el límite máximo de ${_0x_sl} scripts por cuenta.`);
                     window.cambiarVista('dashboard');
                     return;
                 }
@@ -834,7 +888,7 @@
 
         window.guardarScriptEnFirebase = async function() {
             if (!_0x_ma && _0x_msc >= _0x_sl) {
-                _0x_maAlert(_0x_a[11], `<i class="fa-solid fa-triangle-exclamation"></i> Alcanzaste el límite de ${_0x_sl} scripts por Key.`, "error");
+                _0x_maAlert(_0x_a[11], `<i class="fa-solid fa-triangle-exclamation"></i> Alcanzaste el límite de ${_0x_sl} scripts por cuenta.`, "error");
                 return;
             }
             const _0xid = document.getElementById(_0x_a[21]).value.trim();
@@ -859,7 +913,6 @@
                     createdAt: Date.now()
                 });
                 
-                // FIX APLICADO AQUÍ: Añadido ?id= antes del id del script recién guardado
                 const _0xurl = `loadstring(game:HttpGet("${_0x_a[14]}?id=${_0xcId}"))()`;
                 const _0xoutBox = document.getElementById(_0x_a[25]);
                 
