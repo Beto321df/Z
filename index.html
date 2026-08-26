@@ -686,6 +686,26 @@
             }
         }
 
+        function configurarSesionActiva(user) {
+            currentUser = user;
+            isMaster = (user === 'admin123');
+
+            const badge = document.getElementById('user-role-badge');
+            if (isMaster) {
+                badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
+                badge.style.color = "#ef4444";
+                badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
+            } else {
+                badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${currentUser}`;
+                badge.style.color = "#34d399";
+                badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
+            }
+
+            // Guardar cookie/sesión local para que no tenga que iniciar sesión de nuevo
+            localStorage.setItem('zprotector_user', currentUser);
+            cambiarVista('dashboard');
+        }
+
         function ejecutarAuth() {
             const rawUser = document.getElementById('auth-user-input').value.trim();
             const pass = document.getElementById('auth-pass-input').value.trim();
@@ -743,21 +763,7 @@
                         return;
                     }
 
-                    currentUser = user;
-                    isMaster = (user === 'admin123');
-
-                    const badge = document.getElementById('user-role-badge');
-                    if (isMaster) {
-                        badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
-                        badge.style.color = "#ef4444";
-                        badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
-                    } else {
-                        badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${currentUser}`;
-                        badge.style.color = "#34d399";
-                        badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
-                    }
-
-                    cambiarVista('dashboard');
+                    configurarSesionActiva(user);
                 });
             }
         }
@@ -924,6 +930,8 @@
         }
 
         function cerrarSesion() {
+            // Borrar la memoria guardada (cookie local)
+            localStorage.removeItem('zprotector_user');
             currentUser = '';
             isMaster = false;
             document.getElementById('auth-user-input').value = '';
@@ -962,8 +970,27 @@
             document.getElementById('line-numbers-edit').scrollTop = this.scrollTop;
         });
 
-        // Inicializar
-        toggleAuthTab('signin');
+        // ========== INICIALIZACIÓN CON VERIFICACIÓN DE SESIÓN GUARDADA ==========
+        const savedUser = localStorage.getItem('zprotector_user');
+        if (savedUser) {
+            // Si ya hay sesión guardada, verifica rápido que el usuario siga existiendo en Firebase
+            db.ref('users/' + savedUser).once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    configurarSesionActiva(savedUser);
+                } else {
+                    localStorage.removeItem('zprotector_user');
+                    toggleAuthTab('signin');
+                    cambiarVista('login');
+                }
+            }).catch(() => {
+                // Si falla por internet, entra directo con lo guardado
+                configurarSesionActiva(savedUser);
+            });
+        } else {
+            toggleAuthTab('signin');
+            cambiarVista('login');
+        }
+
         actualizarLineas('script-code', 'line-numbers-create', 'line-counter-create');
         actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
     </script>
