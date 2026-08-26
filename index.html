@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Z Hub - Multi-User Panel & Loadstrings</title>
-    <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -16,7 +15,6 @@
             --text-main: #f4f4f5;
             --text-muted: #a1a1aa;
             --success: #34d399;
-            --success-hover: #059669;
             --discord: #5865F2;
             --tiktok: #ff0050;
         }
@@ -37,7 +35,6 @@
             align-items: center;
             justify-content: center;
             padding: 40px 20px 80px 20px;
-            position: relative;
             overflow-x: hidden;
         }
 
@@ -111,10 +108,6 @@
             transform: translateY(-2px);
         }
 
-        .social-btn i {
-            font-size: 1.2rem;
-        }
-
         .card {
             background-color: var(--card-bg);
             border: 1px solid var(--card-border);
@@ -160,10 +153,6 @@
             box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
         }
 
-        .btn:active {
-            transform: translateY(0);
-        }
-
         .btn-secondary {
             background-color: #27272a;
             color: var(--text-main);
@@ -197,7 +186,6 @@
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-muted);
-            transition: color 0.3s;
         }
 
         input {
@@ -217,10 +205,6 @@
             box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
         }
 
-        input:focus + i {
-            color: var(--accent);
-        }
-
         .code-editor-wrapper {
             display: flex;
             background-color: #09090b;
@@ -229,7 +213,6 @@
             overflow: hidden;
             margin-top: 8px;
             height: 250px;
-            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .code-editor-wrapper:focus-within {
@@ -348,6 +331,7 @@
         }
         .alert-error { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
         .alert-info { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+        .alert-success { background: rgba(34, 197, 94, 0.15); color: #34d399; border: 1px solid rgba(34, 197, 94, 0.3); }
         
         .user-badge {
             display: inline-flex;
@@ -558,73 +542,107 @@
         </div>
     </div>
 
-    <!-- Firebase SDK & App Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, set, get, child, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+    <script>
+        // ========== CONFIGURACIÓN LOCAL ==========
+        const MAX_SCRIPTS_PER_USER = 5;
+        const MAX_LINES = 3000;
 
-        const _0x_enc = [
-            "QUl6YVN5QmlFcENVcW1aT1BmQ3R2VFFxQm9ybnFST0NDZUxKNGtn",
-            "bG9hZGVyejEuZmlyZWJhc2VhcHAuY29t",
-            "aHR0cHM6Ly9sb2FkZXJ6MS1kZWZhdWx0LXJ0ZGIuZmlyZWJhc2Vpby5jb20=",
-            "bG9hZGVyejE=",
-            "bG9hZGVyejEuZmlyZWJhc3RvcmFnZS5hcHA=",
-            "MzIzMzE3NjgzNjUx",
-            "MTozMjMzMTc2ODM2NTE6d2ViOjFmNTkwOThiNTliNDBiMmUwNjk5NzY=",
-            "ZHViX01BU1RFUl8yMDI2",
-            "cmVnaXN0ZXJlZF9rZXlzLw==",
-            "ZGV2aWNlcy8=",
-            "c2NyaXB0cy8=",
-            "bXNnLWFsZXJ0",
-            "ZWRpdC1hbGVydA==",
-            "bG9naW4tYWxlcnQ=",
-            "aHR0cHM6Ly96cHJvdGVjdG9yLnZlcmNlbC5hcHAvYXBpL2dldC1zY3JpcHQ=",
-            "auth-user-input",
-            "auth-pass-input",
-            "auth-pin-input",
-            "pin-label",
-            "user-role-badge",
-            "container-scripts",
-            "script-id",
-            "script-code",
-            "edit-script-id",
-            "edit-script-code",
-            "out-loadstring",
-            "view-login",
-            "view-dashboard",
-            "view-create",
-            "view-edit",
-            "view-success"
-        ];
-
-        const _0x_a = _0x_enc.map(item => atob(item));
-
-        const _0x_cfg = {
-            apiKey: _0x_a[0],
-            authDomain: _0x_a[1],
-            databaseURL: _0x_a[2],
-            projectId: _0x_a[3],
-            storageBucket: _0x_a[4],
-            messagingSenderId: _0x_a[5],
-            appId: _0x_a[6]
-        };
-
-        const _0x_app = initializeApp(_0x_cfg);
-        const _0x_db = getDatabase(_0x_app);
-
-        const _0x_mk = _0x_a[7];
-        const _0x_sl = 5;
-        const _0x_kl = 2;
-        const _0x_max_lines = 3000;
-        
-        let _0x_ck = "";
-        let _0x_ma = false;
-        let _0x_asid = "";
-        let _0x_asdat = null;
-        let _0x_msc = 0;
+        // ========== ESTADO GLOBAL ==========
+        let currentUser = "";
+        let isMaster = false;
+        let userScriptCount = 0;
+        let editScriptId = "";
+        let editScriptData = null;
         let currentAuthMode = 'signin';
 
-        // PESTAÑAS DE AUTENTICACIÓN
+        // ========== UTILIDADES ==========
+        function mostrarAlerta(id, msg, tipo) {
+            const el = document.getElementById(id);
+            el.className = `alert alert-${tipo}`;
+            el.innerHTML = msg;
+            el.classList.remove('hidden');
+        }
+
+        function ocultarAlertas() {
+            ['login-alert', 'msg-alert', 'edit-alert'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+        }
+
+        function cambiarVista(vista) {
+            ['view-login', 'view-dashboard', 'view-create', 'view-edit', 'view-success'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+            if (vista === 'login') {
+                document.getElementById('view-login').classList.remove('hidden');
+            } else if (vista === 'dashboard') {
+                document.getElementById('view-dashboard').classList.remove('hidden');
+                cargarScripts();
+            } else if (vista === 'create') {
+                if (!isMaster && userScriptCount >= MAX_SCRIPTS_PER_USER) {
+                    alert(`Has alcanzado el límite máximo de ${MAX_SCRIPTS_PER_USER} scripts por cuenta.`);
+                    cambiarVista('dashboard');
+                    return;
+                }
+                document.getElementById('view-create').classList.remove('hidden');
+                document.getElementById('script-id').value = '';
+                document.getElementById('script-code').value = '';
+                actualizarLineas('script-code', 'line-numbers-create', 'line-counter-create');
+                ocultarAlertas();
+            } else if (vista === 'edit') {
+                document.getElementById('view-edit').classList.remove('hidden');
+                document.getElementById('edit-script-id').value = editScriptId;
+                document.getElementById('edit-script-code').value = editScriptData.code;
+                actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
+                ocultarAlertas();
+            } else if (vista === 'success') {
+                document.getElementById('view-success').classList.remove('hidden');
+            }
+        }
+
+        function actualizarLineas(textareaId, lineNumId, counterId) {
+            const textarea = document.getElementById(textareaId);
+            const lines = textarea.value.split('\n');
+            const total = lines.length;
+            let nums = '';
+            for (let i = 1; i <= total; i++) nums += i + '\n';
+            document.getElementById(lineNumId).textContent = nums;
+            const counter = document.getElementById(counterId);
+            counter.textContent = `Líneas: ${total.toLocaleString()} / 3,000`;
+            if (total > MAX_LINES) {
+                counter.style.color = '#f87171';
+                counter.textContent += ' ❌ (Límite superado)';
+            } else {
+                counter.style.color = 'var(--text-muted)';
+            }
+            // Scroll sync
+            document.getElementById(lineNumId).scrollTop = textarea.scrollTop;
+        }
+
+        function copiarLoadstring(scriptId) {
+            const url = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${scriptId}"))()`;
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(url).then(() => mostrarToast("¡Loadstring copiado al portapapeles!"));
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = url;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.select();
+                try { document.execCommand('copy'); mostrarToast("¡Loadstring copiado al portapapeles!"); } catch(e) { alert("Copia manual:\n" + url); }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        function mostrarToast(msg) {
+            const toast = document.getElementById('toast-notif');
+            document.getElementById('toast-text').innerText = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // ========== AUTENTICACIÓN CON localStorage ==========
         function toggleAuthTab(mode) {
             currentAuthMode = mode;
             const btnSignIn = document.getElementById('tab-signin-btn');
@@ -633,7 +651,7 @@
             const desc = document.getElementById('auth-desc');
             const actionBtn = document.getElementById('auth-action-btn');
 
-            _0x_oa();
+            ocultarAlertas();
 
             if (mode === 'signin') {
                 btnSignIn.className = 'btn';
@@ -650,388 +668,282 @@
             }
         }
 
-        // REGISTRO / LOGIN
-        async function ejecutarAuth() {
+        function ejecutarAuth() {
             const rawUser = document.getElementById('auth-user-input').value.trim();
             const pass = document.getElementById('auth-pass-input').value.trim();
             const pin = document.getElementById('auth-pin-input').value.trim();
 
             if (!rawUser || !pass || !pin) {
-                _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-triangle-exclamation"></i> Completa todos los campos.', 'error');
+                mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Completa todos los campos.', 'error');
                 return;
             }
 
-            // Sanitizar nombre de usuario para evitar errores de ruta en Firebase
             const user = rawUser.replace(/[^a-zA-Z0-9_-]/g, "");
             if (user !== rawUser) {
-                _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-triangle-exclamation"></i> El usuario solo permite letras, números, _ y - (sin espacios).', 'error');
+                mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> El usuario solo permite letras, números, _ y - (sin espacios).', 'error');
                 return;
             }
 
             if (pin.length !== 4 || isNaN(pin)) {
-                _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-triangle-exclamation"></i> El PIN debe ser de 4 números.', 'error');
+                mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> El PIN debe ser de 4 números.', 'error');
                 return;
             }
 
-            const dev = _0x_fp();
-            const userRef = ref(_0x_db, `registered_keys/${user}`);
-            const devRef = ref(_0x_db, `devices/${dev}`);
+            let users = JSON.parse(localStorage.getItem('z_users')) || {};
+            let scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
 
-            _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-spinner fa-spin"></i> Procesando solicitud...', 'info');
+            ocultarAlertas();
 
             if (currentAuthMode === 'signup') {
-                try {
-                    const snap = await get(userRef);
-                    if (snap.exists()) {
-                        _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-xmark"></i> El nombre de usuario ya existe.', 'error');
-                        return;
-                    }
-
-                    const dSnap = await get(devRef);
-                    let keys = [];
-                    if (dSnap.exists() && dSnap.val().keys) {
-                        const rawKeys = dSnap.val().keys;
-                        keys = Array.isArray(rawKeys) ? rawKeys : Object.values(rawKeys);
-                    }
-
-                    if (keys.length >= _0x_kl) {
-                        _0x_maAlert(_0x_a[13], `<i class="fa-solid fa-ban"></i> Tu dispositivo alcanzó el límite de ${_0x_kl} cuentas.`, 'error');
-                        return;
-                    }
-
-                    keys.push(user);
-                    await set(devRef, { keys: keys, updatedAt: Date.now() });
-                    await set(userRef, { password: pass, pin: pin, ownerDevice: dev, createdAt: Date.now() });
-
-                    alert("¡Cuenta creada exitosamente! Ahora puedes iniciar sesión.");
-                    toggleAuthTab('signin');
-                } catch (e) {
-                    console.error("Error Firebase Auth:", e);
-                    _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-xmark"></i> Error: ' + e.message, 'error');
+                if (users[user]) {
+                    mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-xmark"></i> El nombre de usuario ya existe.', 'error');
+                    return;
                 }
+                users[user] = { password: pass, pin: pin, createdAt: Date.now() };
+                localStorage.setItem('z_users', JSON.stringify(users));
+                alert("¡Cuenta creada exitosamente! Ahora inicia sesión.");
+                toggleAuthTab('signin');
+                document.getElementById('auth-user-input').value = '';
+                document.getElementById('auth-pass-input').value = '';
+                document.getElementById('auth-pin-input').value = '';
             } else {
-                try {
-                    const snap = await get(userRef);
-                    if (!snap.exists()) {
-                        _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-exclamation"></i> El usuario no existe.', 'error');
-                        return;
-                    }
-
-                    const dat = snap.val();
-                    if (dat.password !== pass || dat.pin !== pin) {
-                        _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-xmark"></i> Contraseña o PIN incorrectos.', 'error');
-                        return;
-                    }
-
-                    _0x_ck = user;
-                    _0x_ma = (user === "admin123" || user === _0x_mk);
-
-                    const badge = document.getElementById(_0x_a[19]);
-                    if (_0x_ma) {
-                        badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
-                        badge.style.color = "#ef4444";
-                        badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
-                    } else {
-                        badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${_0x_ck}`;
-                        badge.style.color = "#34d399";
-                        badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
-                    }
-                    
-                    cambiarVista('dashboard');
-                } catch (e) {
-                    console.error("Error Login:", e);
-                    _0x_maAlert(_0x_a[13], '<i class="fa-solid fa-circle-xmark"></i> Error: ' + e.message, 'error');
+                if (!users[user]) {
+                    mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-exclamation"></i> El usuario no existe.', 'error');
+                    return;
                 }
-            }
-        }
+                const data = users[user];
+                if (data.password !== pass || data.pin !== pin) {
+                    mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-xmark"></i> Contraseña o PIN incorrectos.', 'error');
+                    return;
+                }
 
-        // LÍNEAS Y CONTADOR
-        function actualizarLineasEditor(textarea, lineDiv, counterDiv) {
-            const lines = textarea.value.split('\n');
-            const totalLines = lines.length;
-            
-            let nums = '';
-            for (let i = 1; i <= totalLines; i++) {
-                nums += i + '\n';
-            }
-            lineDiv.textContent = nums;
+                currentUser = user;
+                isMaster = (user === 'admin123');
 
-            if (counterDiv) {
-                counterDiv.textContent = `Líneas: ${totalLines.toLocaleString()} / 3,000`;
-                if (totalLines > _0x_max_lines) {
-                    counterDiv.style.color = '#f87171';
-                    counterDiv.textContent += ' ❌ (Límite superado)';
+                const badge = document.getElementById('user-role-badge');
+                if (isMaster) {
+                    badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
+                    badge.style.color = "#ef4444";
+                    badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
                 } else {
-                    counterDiv.style.color = 'var(--text-muted)';
+                    badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${currentUser}`;
+                    badge.style.color = "#34d399";
+                    badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
+                }
+
+                cambiarVista('dashboard');
+            }
+        }
+
+        // ========== GESTIÓN DE SCRIPTS ==========
+        function cargarScripts() {
+            const container = document.getElementById('container-scripts');
+            const scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
+            userScriptCount = 0;
+
+            let hasAny = false;
+            let html = '';
+
+            for (const [id, data] of Object.entries(scripts)) {
+                if (isMaster || data.owner === currentUser) {
+                    hasAny = true;
+                    if (data.owner === currentUser) userScriptCount++;
+                    html += `
+                        <div class="script-list-item">
+                            <div>
+                                <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                                    <i class="fa-solid fa-file-code" style="color: var(--accent);"></i> ${id}
+                                </strong>
+                                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                                    <i class="fa-solid fa-user"></i> Creador: ${data.owner || 'Desconocido'}
+                                </p>
+                            </div>
+                            <div class="actions-group">
+                                <button class="btn" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-cp="${id}">
+                                    <i class="fa-solid fa-copy"></i> Copiar
+                                </button>
+                                <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-edit="${id}">
+                                    <i class="fa-solid fa-gear"></i> Editar
+                                </button>
+                            </div>
+                        </div>
+                    `;
                 }
             }
-        }
 
-        const txCreate = document.getElementById('script-code');
-        const lnCreate = document.getElementById('line-numbers-create');
-        const cntCreate = document.getElementById('line-counter-create');
-
-        const txEdit = document.getElementById('edit-script-code');
-        const lnEdit = document.getElementById('line-numbers-edit');
-        const cntEdit = document.getElementById('line-counter-edit');
-
-        txCreate.addEventListener('input', () => actualizarLineasEditor(txCreate, lnCreate, cntCreate));
-        txCreate.addEventListener('scroll', () => { lnCreate.scrollTop = txCreate.scrollTop; });
-
-        txEdit.addEventListener('input', () => actualizarLineasEditor(txEdit, lnEdit, cntEdit));
-        txEdit.addEventListener('scroll', () => { lnEdit.scrollTop = txEdit.scrollTop; });
-
-        function copiarLoadstring(_0xsId) {
-            const _0xcode = `loadstring(game:HttpGet("${_0x_a[14]}?id=${_0xsId}"))()`;
-            
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(_0xcode)
-                    .then(() => _0x_mostrarToast("¡Loadstring copiado al portapapeles!"))
-                    .catch(() => _0x_copiarFallback(_0xcode));
-            } else {
-                _0x_copiarFallback(_0xcode);
+            if (!hasAny) {
+                html = '<div style="text-align: center; padding: 30px 0;"><p style="color: var(--text-muted);"><i class="fa-solid fa-folder-open"></i> No tienes ningún script registrado todavía.</p></div>';
             }
+
+            container.innerHTML = html;
+
+            // Event listeners para copiar
+            container.querySelectorAll('[data-cp]').forEach(btn => {
+                btn.onclick = () => copiarLoadstring(btn.dataset.cp);
+            });
+
+            // Event listeners para editar
+            container.querySelectorAll('[data-edit]').forEach(btn => {
+                btn.onclick = () => {
+                    const id = btn.dataset.edit;
+                    const scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
+                    if (scripts[id]) {
+                        editScriptId = id;
+                        editScriptData = scripts[id];
+                        cambiarVista('edit');
+                    } else {
+                        alert('El script ya no existe.');
+                    }
+                };
+            });
         }
 
-        function _0x_copiarFallback(text) {
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.left = "-999999px";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                _0x_mostrarToast("¡Loadstring copiado al portapapeles!");
-            } catch (err) {
-                alert("Selecciona y copia manualmente:\n" + text);
+        function guardarScript() {
+            const id = document.getElementById('script-id').value.trim();
+            const code = document.getElementById('script-code').value;
+
+            if (!id || !code.trim()) {
+                mostrarAlerta('msg-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Rellena el ID y el Código del script.', 'error');
+                return;
             }
-            document.body.removeChild(textArea);
-        }
 
-        function _0x_mostrarToast(msg) {
-            const toast = document.getElementById('toast-notif');
-            document.getElementById('toast-text').innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
+            const cleanId = id.replace(/[^a-zA-Z0-9_-]/g, "");
+            if (cleanId !== id) {
+                mostrarAlerta('msg-alert', '<i class="fa-solid fa-triangle-exclamation"></i> El ID solo permite letras, números, _ y -.', 'error');
+                return;
+            }
 
-        function _0x_fp() {
-            const _0xc1 = document.createElement('canvas');
-            const _0xc2 = _0xc1.getContext('webgl') || _0xc1.getContext('experimental-webgl');
-            let _0xri = "";
-            if (_0xc2) {
-                const _0xdi = _0xc2.getExtension('WEBGL_debug_renderer_info');
-                if (_0xdi) {
-                    _0xri = _0xc2.getParameter(_0xdi.UNMASKED_RENDERER_WEBGL);
+            const lines = code.split('\n').length;
+            if (lines > MAX_LINES) {
+                mostrarAlerta('msg-alert', `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${lines.toLocaleString()} líneas. El límite máximo permitido es de 3,000.`, 'error');
+                return;
+            }
+
+            let scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
+
+            if (scripts[cleanId]) {
+                if (!isMaster && scripts[cleanId].owner !== currentUser) {
+                    mostrarAlerta('msg-alert', '<i class="fa-solid fa-ban"></i> No puedes editar scripts de otro usuario.', 'error');
+                    return;
                 }
             }
-            const _0xrs = `${navigator.hardwareConcurrency}-${screen.width}x${screen.height}-${screen.colorDepth}-${_0xri}`;
-            let _0xh = 0;
-            for (let _0xi = 0; _0xi < _0xrs.length; _0xi++) {
-                let _0xch = _0xrs.charCodeAt(_0xi);
-                _0xh = ((_0xh << 5) - _0xh) + _0xch;
-                _0xh |= 0;
+
+            scripts[cleanId] = {
+                owner: currentUser,
+                code: code,
+                createdAt: Date.now()
+            };
+
+            localStorage.setItem('z_scripts', JSON.stringify(scripts));
+
+            // Mostrar loadstring
+            const loadUrl = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${cleanId}"))()`;
+            const outBox = document.getElementById('out-loadstring');
+            outBox.innerHTML = `<span style="user-select:all;">${loadUrl}</span> 
+                <button class="btn" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8rem;" id="btn-copy-gen">
+                    <i class="fa-solid fa-copy"></i> Copiar
+                </button>`;
+            document.getElementById('btn-copy-gen').onclick = () => copiarLoadstring(cleanId);
+
+            cambiarVista('success');
+        }
+
+        function actualizarScript() {
+            const code = document.getElementById('edit-script-code').value;
+            if (!code.trim()) {
+                mostrarAlerta('edit-alert', '<i class="fa-solid fa-triangle-exclamation"></i> El código no puede estar vacío.', 'error');
+                return;
             }
-            return "DEV_" + Math.abs(_0xh);
+
+            const lines = code.split('\n').length;
+            if (lines > MAX_LINES) {
+                mostrarAlerta('edit-alert', `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${lines.toLocaleString()} líneas. El límite máximo permitido es de 3,000.`, 'error');
+                return;
+            }
+
+            let scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
+            if (!scripts[editScriptId]) {
+                alert('El script ya no existe.');
+                return;
+            }
+
+            scripts[editScriptId].code = code;
+            localStorage.setItem('z_scripts', JSON.stringify(scripts));
+            alert('¡Script actualizado correctamente!');
+            cambiarVista('dashboard');
+        }
+
+        function eliminarScript() {
+            const id = document.getElementById('edit-script-id').value.trim();
+            if (!id) {
+                mostrarAlerta('edit-alert', '<i class="fa-solid fa-triangle-exclamation"></i> No se pudo identificar el ID.', 'error');
+                return;
+            }
+
+            if (!confirm(`¿Seguro que quieres borrar "${id}"?`)) return;
+
+            let scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
+            if (!scripts[id]) {
+                alert('El script ya no existe.');
+                return;
+            }
+
+            if (!isMaster && scripts[id].owner !== currentUser) {
+                mostrarAlerta('edit-alert', '<i class="fa-solid fa-ban"></i> No puedes eliminar scripts de otro usuario.', 'error');
+                return;
+            }
+
+            delete scripts[id];
+            localStorage.setItem('z_scripts', JSON.stringify(scripts));
+            alert('¡Script eliminado correctamente!');
+            editScriptId = '';
+            editScriptData = null;
+            cambiarVista('dashboard');
         }
 
         function cerrarSesion() {
-            _0x_ck = "";
-            _0x_ma = false;
-            document.getElementById('auth-user-input').value = "";
-            document.getElementById('auth-pass-input').value = "";
-            document.getElementById('auth-pin-input').value = "";
+            currentUser = '';
+            isMaster = false;
+            document.getElementById('auth-user-input').value = '';
+            document.getElementById('auth-pass-input').value = '';
+            document.getElementById('auth-pin-input').value = '';
             toggleAuthTab('signin');
             cambiarVista('login');
         }
 
-        function cambiarVista(_0xvis) {
-            [_0x_a[26], _0x_a[27], _0x_a[28], _0x_a[29], _0x_a[30]].forEach(_0xid => {
-                document.getElementById(_0xid).classList.add('hidden');
-            });
-            if (_0xvis === 'login') {
-                document.getElementById(_0x_a[26]).classList.remove('hidden');
-            } else if (_0xvis === 'dashboard') {
-                document.getElementById(_0x_a[27]).classList.remove('hidden');
-                _0x_cs();
-            } else if (_0xvis === 'create') {
-                if (!_0x_ma && _0x_msc >= _0x_sl) {
-                    alert(`Has alcanzado el límite máximo de ${_0x_sl} scripts por cuenta.`);
-                    cambiarVista('dashboard');
-                    return;
-                }
-                document.getElementById(_0x_a[28]).classList.remove('hidden');
-                document.getElementById(_0x_a[21]).value = '';
-                document.getElementById(_0x_a[22]).value = '';
-                actualizarLineasEditor(txCreate, lnCreate, cntCreate);
-                _0x_oa();
-            } else if (_0xvis === 'edit') {
-                document.getElementById(_0x_a[29]).classList.remove('hidden');
-                document.getElementById(_0x_a[23]).value = _0x_asid;
-                document.getElementById(_0x_a[24]).value = _0x_asdat.code;
-                actualizarLineasEditor(txEdit, lnEdit, cntEdit);
-                _0x_oa();
-            } else if (_0xvis === 'success') {
-                document.getElementById(_0x_a[30]).classList.remove('hidden');
-            }
-        }
+        // ========== EVENTOS ==========
+        document.getElementById('tab-signin-btn').onclick = () => toggleAuthTab('signin');
+        document.getElementById('tab-signup-btn').onclick = () => toggleAuthTab('signup');
+        document.getElementById('auth-action-btn').onclick = ejecutarAuth;
 
-        function _0x_maAlert(_0xcId, _0xtxt, _0xtip) {
-            const _0xab = document.getElementById(_0xcId);
-            _0xab.className = `alert alert-${_0xtip}`;
-            _0xab.innerHTML = _0xtxt;
-            _0xab.classList.remove('hidden');
-        }
+        document.getElementById('btn-goto-create').onclick = () => cambiarVista('create');
+        document.getElementById('btn-logout').onclick = cerrarSesion;
+        document.getElementById('btn-save-script').onclick = guardarScript;
+        document.getElementById('btn-back-create').onclick = () => cambiarVista('dashboard');
+        document.getElementById('btn-update-script').onclick = actualizarScript;
+        document.getElementById('btn-delete-script').onclick = eliminarScript;
+        document.getElementById('btn-back-edit').onclick = () => cambiarVista('dashboard');
+        document.getElementById('btn-back-success').onclick = () => cambiarVista('dashboard');
 
-        function _0x_oa() {
-            [_0x_a[13], _0x_a[11], _0x_a[12]].forEach(_0xid => document.getElementById(_0xid).classList.add('hidden'));
-        }
+        // Sincronización de líneas
+        document.getElementById('script-code').addEventListener('input', function() {
+            actualizarLineas('script-code', 'line-numbers-create', 'line-counter-create');
+        });
+        document.getElementById('script-code').addEventListener('scroll', function() {
+            document.getElementById('line-numbers-create').scrollTop = this.scrollTop;
+        });
 
-        function abrirEditor(_0xsId, _0xsDat) {
-            _0x_asid = _0xsId;
-            _0x_asdat = _0xsDat;
-            cambiarVista('edit');
-        }
+        document.getElementById('edit-script-code').addEventListener('input', function() {
+            actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
+        });
+        document.getElementById('edit-script-code').addEventListener('scroll', function() {
+            document.getElementById('line-numbers-edit').scrollTop = this.scrollTop;
+        });
 
-        async function guardarScriptEnFirebase() {
-            if (!_0x_ma && _0x_msc >= _0x_sl) {
-                _0x_maAlert(_0x_a[11], `<i class="fa-solid fa-triangle-exclamation"></i> Alcanzaste el límite de ${_0x_sl} scripts por cuenta.`, "error");
-                return;
-            }
-            const _0xid = document.getElementById(_0x_a[21]).value.trim();
-            const _0xcode = document.getElementById(_0x_a[22]).value;
-
-            if (!_0xid || !_0xcode.trim()) {
-                _0x_maAlert(_0x_a[11], '<i class="fa-solid fa-triangle-exclamation"></i> Rellena el ID y el Código del script.', "error");
-                return;
-            }
-
-            const totalLineas = _0xcode.split('\n').length;
-            if (totalLineas > _0x_max_lines) {
-                _0x_maAlert(_0x_a[11], `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${totalLineas.toLocaleString()} líneas. El límite máximo permitido es de 3,000 líneas.`, "error");
-                return;
-            }
-
-            const _0xcId = _0xid.replace(/[^a-zA-Z0-9_-]/g, "");
-            try {
-                await set(ref(_0x_db, _0x_a[10] + _0xcId), {
-                    ownerKey: _0x_ck,
-                    code: _0xcode,
-                    createdAt: Date.now()
-                });
-                
-                const _0xurl = `loadstring(game:HttpGet("${_0x_a[14]}?id=${_0xcId}"))()`;
-                const _0xoutBox = document.getElementById(_0x_a[25]);
-                
-                _0xoutBox.innerHTML = `<span style="user-select:all;">${_0xurl}</span> <button class="btn" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8rem;" id="btn-copy-gen"><i class="fa-solid fa-copy"></i> Copiar</button>`;
-                document.getElementById('btn-copy-gen').onclick = () => copiarLoadstring(_0xcId);
-
-                cambiarVista('success');
-            } catch (_0xerr) {
-                _0x_maAlert(_0x_a[11], "Error al guardar el script: " + _0xerr.message, "error");
-            }
-        }
-
-        async function actualizarScriptEnFirebase() {
-            const _0xnc = document.getElementById(_0x_a[24]).value;
-
-            if (!_0xnc.trim()) {
-                _0x_maAlert(_0x_a[12], '<i class="fa-solid fa-triangle-exclamation"></i> El código no puede estar vacío.', 'error');
-                return;
-            }
-
-            const totalLineas = _0xnc.split('\n').length;
-            if (totalLineas > _0x_max_lines) {
-                _0x_maAlert(_0x_a[12], `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${totalLineas.toLocaleString()} líneas. El límite máximo permitido es de 3,000 líneas.`, "error");
-                return;
-            }
-
-            try {
-                await update(ref(_0x_db, _0x_a[10] + _0x_asid), { code: _0xnc });
-                alert("¡Script actualizado correctamente!");
-                cambiarVista('dashboard');
-            } catch(_0xe) {
-                _0x_maAlert(_0x_a[12], 'Error al actualizar: ' + _0xe.message, 'error');
-            }
-        }
-
-        async function eliminarScriptDeFirebase() {
-            const scriptIdToDelete = document.getElementById(_0x_a[23]).value.trim() || _0x_asid;
-            
-            if (!scriptIdToDelete) {
-                _0x_maAlert(_0x_a[12], '<i class="fa-solid fa-triangle-exclamation"></i> No se pudo identificar el ID del script.', 'error');
-                return;
-            }
-
-            if (!confirm(`¿Seguro que quieres borrar "${scriptIdToDelete}"?`)) return;
-
-            try {
-                await set(ref(_0x_db, _0x_a[10] + scriptIdToDelete), null);
-                alert("¡Script eliminado correctamente!");
-                _0x_asid = "";
-                _0x_asdat = null;
-                cambiarVista('dashboard');
-            } catch(_0xe) {
-                _0x_maAlert(_0x_a[12], 'Error al borrar: ' + _0xe.message, 'error');
-            }
-        }
-
-        async function _0x_cs() {
-            const _0xct = document.getElementById(_0x_a[20]);
-            _0xct.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 25px;"><i class="fa-solid fa-spinner fa-spin"></i> Buscando scripts...</p>';
-            try {
-                const _0xsnap = await get(child(ref(_0x_db), _0x_a[10]));
-                _0x_msc = 0;
-                if (_0xsnap.exists()) {
-                    _0xct.innerHTML = '';
-                    const _0xdat = _0xsnap.val();
-                    let _0xcnt = 0;
-                    Object.keys(_0xdat).forEach(_0xsId => {
-                        const _0xscr = _0xdat[_0xsId];
-                        if (_0xscr.ownerKey === _0x_ck) _0x_msc++;
-                        if (_0x_ma || _0xscr.ownerKey === _0x_ck) {
-                            _0xcnt++;
-                            const _0xdiv = document.createElement('div');
-                            _0xdiv.className = 'script-list-item';
-                            _0xdiv.innerHTML = `
-                                <div>
-                                    <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-file-code" style="color: var(--accent);"></i> ${_0xsId}</strong>
-                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;"><i class="fa-solid fa-user"></i> Creador: ${_0xscr.ownerKey || 'Desconocido'}</p>
-                                </div>
-                                <div class="actions-group">
-                                    <button class="btn" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" id="btn-cp-${_0xsId}"><i class="fa-solid fa-copy"></i> Copiar</button>
-                                    <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" id="btn-edit-${_0xsId}"><i class="fa-solid fa-gear"></i> Editar</button>
-                                </div>`;
-                            _0xct.appendChild(_0xdiv);
-                            document.getElementById(`btn-cp-${_0xsId}`).onclick = () => copiarLoadstring(_0xsId);
-                            document.getElementById(`btn-edit-${_0xsId}`).onclick = () => abrirEditor(_0xsId, _0xscr);
-                        }
-                    });
-                    if (_0xcnt === 0) {
-                        _0xct.innerHTML = '<div style="text-align: center; padding: 30px 0;"><p style="color: var(--text-muted);"><i class="fa-solid fa-folder-open"></i> No tienes ningún script registrado todavía.</p></div>';
-                    }
-                } else {
-                    _0xct.innerHTML = '<div style="text-align: center; padding: 30px 0;"><p style="color: var(--text-muted);"><i class="fa-solid fa-folder-open"></i> No hay scripts guardados.</p></div>';
-                }
-            } catch (_0xerr) {
-                _0xct.innerHTML = '<p style="color: var(--accent); text-align: center;"><i class="fa-solid fa-triangle-exclamation"></i> Error al cargar datos.</p>';
-            }
-        }
-
-        // VINCULACIÓN DIRECTA DE EVENTOS DE BOTONES
-        document.getElementById('tab-signin-btn').addEventListener('click', () => toggleAuthTab('signin'));
-        document.getElementById('tab-signup-btn').addEventListener('click', () => toggleAuthTab('signup'));
-        document.getElementById('auth-action-btn').addEventListener('click', ejecutarAuth);
-        document.getElementById('btn-goto-create').addEventListener('click', () => cambiarVista('create'));
-        document.getElementById('btn-logout').addEventListener('click', cerrarSesion);
-        document.getElementById('btn-save-script').addEventListener('click', guardarScriptEnFirebase);
-        document.getElementById('btn-back-create').addEventListener('click', () => cambiarVista('dashboard'));
-        document.getElementById('btn-update-script').addEventListener('click', actualizarScriptEnFirebase);
-        document.getElementById('btn-delete-script').addEventListener('click', eliminarScriptDeFirebase);
-        document.getElementById('btn-back-edit').addEventListener('click', () => cambiarVista('dashboard'));
-        document.getElementById('btn-back-success').addEventListener('click', () => cambiarVista('dashboard'));
+        // Inicializar
+        toggleAuthTab('signin');
+        actualizarLineas('script-code', 'line-numbers-create', 'line-counter-create');
+        actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
     </script>
 </body>
 </html>
