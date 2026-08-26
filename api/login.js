@@ -6,6 +6,7 @@ export default async function handler(req, res) {
     const { key, pin } = req.body;
     const MASTER_KEY = process.env.MASTER_KEY || "Zhub_MASTER_2026";
     const DB_URL = "https://loaderz1-default-rtdb.firebaseio.com";
+    const SECRET = process.env.FIREBASE_SECRET; // <-- Tu secreto de Vercel
 
     // MÁSTER ADMIN CHECK
     if (key === MASTER_KEY) {
@@ -17,7 +18,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        const keyRes = await fetch(`${DB_URL}/registered_keys/${key}.json`);
+        // Consultar la key usando el secreto (?auth=...)
+        const keyRes = await fetch(`${DB_URL}/registered_keys/${key}.json?auth=${SECRET}`);
         const keyData = await keyRes.json();
 
         if (keyData) {
@@ -32,7 +34,8 @@ export default async function handler(req, res) {
                 return res.status(400).json({ ok: false, needsNewPin: true, msg: 'Key nueva. Ingresa un PIN de 4 dígitos para registrarla.' });
             }
 
-            await fetch(`${DB_URL}/registered_keys/${key}.json`, {
+            // Registrar la key nueva usando el secreto (?auth=...)
+            await fetch(`${DB_URL}/registered_keys/${key}.json?auth=${SECRET}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ pin, createdAt: Date.now() })
