@@ -15,11 +15,11 @@ export default async function handler(req, res) {
         const userRefUrl = `${databaseURL}/users/${user}.json`;
 
         if (mode === 'signup') {
-            // Verificar si el usuario ya existe
             const checkRes = await fetch(userRefUrl);
             const existingData = await checkRes.json();
 
-            if (existingData) {
+            // Solo bloquear si ya existe un usuario real con contraseña registrada
+            if (existingData && typeof existingData === 'object' && existingData.pass) {
                 return res.status(400).json({ ok: false, msg: 'El nombre de usuario ya está en uso.' });
             }
 
@@ -37,11 +37,10 @@ export default async function handler(req, res) {
             }
 
         } else if (mode === 'signin') {
-            // Iniciar sesión
             const checkRes = await fetch(userRefUrl);
             const userData = await checkRes.json();
 
-            if (!userData) {
+            if (!userData || !userData.pass) {
                 return res.status(404).json({ ok: false, msg: 'El usuario no existe.' });
             }
 
