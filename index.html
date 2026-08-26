@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Z Hub - Multi-User Panel & Loadstrings</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- SDK de Firebase (Compat Mode) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --bg-color: #09090b;
@@ -543,7 +548,21 @@
     </div>
 
     <script>
-        // ========== CONFIGURACIÓN LOCAL ==========
+        // ========== CONFIGURACIÓN FIREBASE ==========
+        const firebaseConfig = {
+            apiKey: "AIzaSyBiEcPCUmZOPfCtvTQqBornqROCCeLJ4kg",
+            authDomain: "loaderz1.firebaseapp.com",
+            databaseURL: "https://loaderz1-default-rtdb.firebaseio.com",
+            projectId: "loaderz1",
+            storageBucket: "loaderz1.firebasestorage.app",
+            messagingSenderId: "323317683651",
+            appId: "1:323317683651:web:1f59098b59b40b2e069976"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         const MAX_SCRIPTS_PER_USER = 5;
         const MAX_LINES = 3000;
 
@@ -615,7 +634,6 @@
             } else {
                 counter.style.color = 'var(--text-muted)';
             }
-            // Scroll sync
             document.getElementById(lineNumId).scrollTop = textarea.scrollTop;
         }
 
@@ -642,7 +660,7 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // ========== AUTENTICACIÓN CON localStorage ==========
+        // ========== AUTENTICACIÓN CON FIREBASE DATABASE ==========
         function toggleAuthTab(mode) {
             currentAuthMode = mode;
             const btnSignIn = document.getElementById('tab-signin-btn');
@@ -689,112 +707,121 @@
                 return;
             }
 
-            let users = JSON.parse(localStorage.getItem('z_users')) || {};
-            let scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
-
             ocultarAlertas();
 
+            const userRef = db.ref('users/' + user);
+
             if (currentAuthMode === 'signup') {
-                if (users[user]) {
-                    mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-xmark"></i> El nombre de usuario ya existe.', 'error');
-                    return;
-                }
-                users[user] = { password: pass, pin: pin, createdAt: Date.now() };
-                localStorage.setItem('z_users', JSON.stringify(users));
-                alert("¡Cuenta creada exitosamente! Ahora inicia sesión.");
-                toggleAuthTab('signin');
-                document.getElementById('auth-user-input').value = '';
-                document.getElementById('auth-pass-input').value = '';
-                document.getElementById('auth-pin-input').value = '';
+                userRef.once('value').then(snapshot => {
+                    if (snapshot.exists()) {
+                        mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-xmark"></i> El nombre de usuario ya existe.', 'error');
+                    } else {
+                        userRef.set({
+                            password: pass,
+                            pin: pin,
+                            createdAt: Date.now()
+                        }).then(() => {
+                            alert("¡Cuenta creada exitosamente en Firebase! Ahora inicia sesión.");
+                            toggleAuthTab('signin');
+                            document.getElementById('auth-user-input').value = '';
+                            document.getElementById('auth-pass-input').value = '';
+                            document.getElementById('auth-pin-input').value = '';
+                        }).catch(err => {
+                            mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Error al conectar con Firebase.', 'error');
+                        });
+                    }
+                });
             } else {
-                if (!users[user]) {
-                    mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-exclamation"></i> El usuario no existe.', 'error');
-                    return;
-                }
-                const data = users[user];
-                if (data.password !== pass || data.pin !== pin) {
-                    mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-xmark"></i> Contraseña o PIN incorrectos.', 'error');
-                    return;
-                }
+                userRef.once('value').then(snapshot => {
+                    if (!snapshot.exists()) {
+                        mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-exclamation"></i> El usuario no existe.', 'error');
+                        return;
+                    }
+                    const data = snapshot.val();
+                    if (data.password !== pass || data.pin !== pin) {
+                        mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-xmark"></i> Contraseña o PIN incorrectos.', 'error');
+                        return;
+                    }
 
-                currentUser = user;
-                isMaster = (user === 'admin123');
+                    currentUser = user;
+                    isMaster = (user === 'admin123');
 
-                const badge = document.getElementById('user-role-badge');
-                if (isMaster) {
-                    badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
-                    badge.style.color = "#ef4444";
-                    badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
-                } else {
-                    badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${currentUser}`;
-                    badge.style.color = "#34d399";
-                    badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
-                }
+                    const badge = document.getElementById('user-role-badge');
+                    if (isMaster) {
+                        badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
+                        badge.style.color = "#ef4444";
+                        badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                    } else {
+                        badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${currentUser}`;
+                        badge.style.color = "#34d399";
+                        badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
+                    }
 
-                cambiarVista('dashboard');
+                    cambiarVista('dashboard');
+                });
             }
         }
 
-        // ========== GESTIÓN DE SCRIPTS ==========
+        // ========== GESTIÓN DE SCRIPTS CON FIREBASE ==========
         function cargarScripts() {
             const container = document.getElementById('container-scripts');
-            const scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
-            userScriptCount = 0;
+            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando scripts de Firebase...</p>';
 
-            let hasAny = false;
-            let html = '';
+            db.ref('scripts').once('value').then(snapshot => {
+                const scripts = snapshot.val() || {};
+                userScriptCount = 0;
+                let hasAny = false;
+                let html = '';
 
-            for (const [id, data] of Object.entries(scripts)) {
-                if (isMaster || data.owner === currentUser) {
-                    hasAny = true;
-                    if (data.owner === currentUser) userScriptCount++;
-                    html += `
-                        <div class="script-list-item">
-                            <div>
-                                <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
-                                    <i class="fa-solid fa-file-code" style="color: var(--accent);"></i> ${id}
-                                </strong>
-                                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
-                                    <i class="fa-solid fa-user"></i> Creador: ${data.owner || 'Desconocido'}
-                                </p>
+                for (const [id, data] of Object.entries(scripts)) {
+                    if (isMaster || data.owner === currentUser) {
+                        hasAny = true;
+                        if (data.owner === currentUser) userScriptCount++;
+                        html += `
+                            <div class="script-list-item">
+                                <div>
+                                    <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                                        <i class="fa-solid fa-file-code" style="color: var(--accent);"></i> ${id}
+                                    </strong>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                                        <i class="fa-solid fa-user"></i> Creador: ${data.owner || 'Desconocido'}
+                                    </p>
+                                </div>
+                                <div class="actions-group">
+                                    <button class="btn" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-cp="${id}">
+                                        <i class="fa-solid fa-copy"></i> Copiar
+                                    </button>
+                                    <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-edit="${id}">
+                                        <i class="fa-solid fa-gear"></i> Editar
+                                    </button>
+                                </div>
                             </div>
-                            <div class="actions-group">
-                                <button class="btn" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-cp="${id}">
-                                    <i class="fa-solid fa-copy"></i> Copiar
-                                </button>
-                                <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-edit="${id}">
-                                    <i class="fa-solid fa-gear"></i> Editar
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }
-            }
-
-            if (!hasAny) {
-                html = '<div style="text-align: center; padding: 30px 0;"><p style="color: var(--text-muted);"><i class="fa-solid fa-folder-open"></i> No tienes ningún script registrado todavía.</p></div>';
-            }
-
-            container.innerHTML = html;
-
-            // Event listeners para copiar
-            container.querySelectorAll('[data-cp]').forEach(btn => {
-                btn.onclick = () => copiarLoadstring(btn.dataset.cp);
-            });
-
-            // Event listeners para editar
-            container.querySelectorAll('[data-edit]').forEach(btn => {
-                btn.onclick = () => {
-                    const id = btn.dataset.edit;
-                    const scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
-                    if (scripts[id]) {
-                        editScriptId = id;
-                        editScriptData = scripts[id];
-                        cambiarVista('edit');
-                    } else {
-                        alert('El script ya no existe.');
+                        `;
                     }
-                };
+                }
+
+                if (!hasAny) {
+                    html = '<div style="text-align: center; padding: 30px 0;"><p style="color: var(--text-muted);"><i class="fa-solid fa-folder-open"></i> No tienes ningún script registrado todavía.</p></div>';
+                }
+
+                container.innerHTML = html;
+
+                container.querySelectorAll('[data-cp]').forEach(btn => {
+                    btn.onclick = () => copiarLoadstring(btn.dataset.cp);
+                });
+
+                container.querySelectorAll('[data-edit]').forEach(btn => {
+                    btn.onclick = () => {
+                        const id = btn.dataset.edit;
+                        if (scripts[id]) {
+                            editScriptId = id;
+                            editScriptData = scripts[id];
+                            cambiarVista('edit');
+                        } else {
+                            alert('El script ya no existe.');
+                        }
+                    };
+                });
             });
         }
 
@@ -819,33 +846,33 @@
                 return;
             }
 
-            let scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
+            const scriptRef = db.ref('scripts/' + cleanId);
 
-            if (scripts[cleanId]) {
-                if (!isMaster && scripts[cleanId].owner !== currentUser) {
-                    mostrarAlerta('msg-alert', '<i class="fa-solid fa-ban"></i> No puedes editar scripts de otro usuario.', 'error');
-                    return;
+            scriptRef.once('value').then(snapshot => {
+                if (snapshot.exists()) {
+                    const existingData = snapshot.val();
+                    if (!isMaster && existingData.owner !== currentUser) {
+                        mostrarAlerta('msg-alert', '<i class="fa-solid fa-ban"></i> No puedes editar scripts de otro usuario.', 'error');
+                        return;
+                    }
                 }
-            }
 
-            scripts[cleanId] = {
-                owner: currentUser,
-                code: code,
-                createdAt: Date.now()
-            };
+                scriptRef.set({
+                    owner: currentUser,
+                    code: code,
+                    createdAt: Date.now()
+                }).then(() => {
+                    const loadUrl = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${cleanId}"))()`;
+                    const outBox = document.getElementById('out-loadstring');
+                    outBox.innerHTML = `<span style="user-select:all;">${loadUrl}</span> 
+                        <button class="btn" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8rem;" id="btn-copy-gen">
+                            <i class="fa-solid fa-copy"></i> Copiar
+                        </button>`;
+                    document.getElementById('btn-copy-gen').onclick = () => copiarLoadstring(cleanId);
 
-            localStorage.setItem('z_scripts', JSON.stringify(scripts));
-
-            // Mostrar loadstring
-            const loadUrl = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${cleanId}"))()`;
-            const outBox = document.getElementById('out-loadstring');
-            outBox.innerHTML = `<span style="user-select:all;">${loadUrl}</span> 
-                <button class="btn" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8rem;" id="btn-copy-gen">
-                    <i class="fa-solid fa-copy"></i> Copiar
-                </button>`;
-            document.getElementById('btn-copy-gen').onclick = () => copiarLoadstring(cleanId);
-
-            cambiarVista('success');
+                    cambiarVista('success');
+                });
+            });
         }
 
         function actualizarScript() {
@@ -861,16 +888,10 @@
                 return;
             }
 
-            let scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
-            if (!scripts[editScriptId]) {
-                alert('El script ya no existe.');
-                return;
-            }
-
-            scripts[editScriptId].code = code;
-            localStorage.setItem('z_scripts', JSON.stringify(scripts));
-            alert('¡Script actualizado correctamente!');
-            cambiarVista('dashboard');
+            db.ref('scripts/' + editScriptId + '/code').set(code).then(() => {
+                alert('¡Script actualizado correctamente en Firebase!');
+                cambiarVista('dashboard');
+            });
         }
 
         function eliminarScript() {
@@ -882,23 +903,24 @@
 
             if (!confirm(`¿Seguro que quieres borrar "${id}"?`)) return;
 
-            let scripts = JSON.parse(localStorage.getItem('z_scripts')) || {};
-            if (!scripts[id]) {
-                alert('El script ya no existe.');
-                return;
-            }
+            db.ref('scripts/' + id).once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    alert('El script ya no existe.');
+                    return;
+                }
+                const data = snapshot.val();
+                if (!isMaster && data.owner !== currentUser) {
+                    mostrarAlerta('edit-alert', '<i class="fa-solid fa-ban"></i> No puedes eliminar scripts de otro usuario.', 'error');
+                    return;
+                }
 
-            if (!isMaster && scripts[id].owner !== currentUser) {
-                mostrarAlerta('edit-alert', '<i class="fa-solid fa-ban"></i> No puedes eliminar scripts de otro usuario.', 'error');
-                return;
-            }
-
-            delete scripts[id];
-            localStorage.setItem('z_scripts', JSON.stringify(scripts));
-            alert('¡Script eliminado correctamente!');
-            editScriptId = '';
-            editScriptData = null;
-            cambiarVista('dashboard');
+                db.ref('scripts/' + id).remove().then(() => {
+                    alert('¡Script eliminado correctamente!');
+                    editScriptId = '';
+                    editScriptData = null;
+                    cambiarVista('dashboard');
+                });
+            });
         }
 
         function cerrarSesion() {
