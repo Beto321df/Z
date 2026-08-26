@@ -660,7 +660,7 @@
             setTimeout(() => toast.classList.remove('show'), 3000);
         }
 
-        // ========== AUTENTICACIÓN CON FIREBASE DATABASE ==========
+        // ========== AUTENTICACIÓN SEGURA VÍA API (VERCEL) ==========
         function toggleAuthTab(mode) {
             currentAuthMode = mode;
             const btnSignIn = document.getElementById('tab-signin-btn');
@@ -709,42 +709,33 @@
 
             ocultarAlertas();
 
-            const userRef = db.ref('users/' + user);
+            // Petición segura a nuestra API en Vercel para evitar bloqueos de Firebase
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mode: currentAuthMode,
+                    user: user,
+                    pass: pass,
+                    pin: pin
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.ok) {
+                    mostrarAlerta('login-alert', `<i class="fa-solid fa-circle-xmark"></i> ${data.msg}`, 'error');
+                    return;
+                }
 
-            if (currentAuthMode === 'signup') {
-                userRef.once('value').then(snapshot => {
-                    if (snapshot.exists()) {
-                        mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-xmark"></i> El nombre de usuario ya existe.', 'error');
-                    } else {
-                        userRef.set({
-                            password: pass,
-                            pin: pin,
-                            createdAt: Date.now()
-                        }).then(() => {
-                            alert("¡Cuenta creada exitosamente en Firebase! Ahora inicia sesión.");
-                            toggleAuthTab('signin');
-                            document.getElementById('auth-user-input').value = '';
-                            document.getElementById('auth-pass-input').value = '';
-                            document.getElementById('auth-pin-input').value = '';
-                        }).catch(err => {
-                            mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Error al conectar con Firebase.', 'error');
-                        });
-                    }
-                });
-            } else {
-                userRef.once('value').then(snapshot => {
-                    if (!snapshot.exists()) {
-                        mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-exclamation"></i> El usuario no existe.', 'error');
-                        return;
-                    }
-                    const data = snapshot.val();
-                    if (data.password !== pass || data.pin !== pin) {
-                        mostrarAlerta('login-alert', '<i class="fa-solid fa-circle-xmark"></i> Contraseña o PIN incorrectos.', 'error');
-                        return;
-                    }
-
+                if (currentAuthMode === 'signup') {
+                    alert("¡Cuenta creada exitosamente! Ahora inicia sesión.");
+                    toggleAuthTab('signin');
+                    document.getElementById('auth-user-input').value = '';
+                    document.getElementById('auth-pass-input').value = '';
+                    document.getElementById('auth-pin-input').value = '';
+                } else {
                     currentUser = user;
-                    isMaster = (user === 'admin123');
+                    isMaster = (user === 'admin123'); // Cambia esto si tu master usa otro nombre
 
                     // Guardar sesión persistente en localStorage
                     localStorage.setItem('z_current_user', currentUser);
@@ -752,8 +743,11 @@
 
                     actualizarBadgeRol();
                     cambiarVista('dashboard');
-                });
-            }
+                }
+            })
+            .catch(err => {
+                mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Error al conectar con el servidor.', 'error');
+            });
         }
 
         function actualizarBadgeRol() {
