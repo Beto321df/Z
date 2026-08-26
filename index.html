@@ -566,9 +566,9 @@
         const MAX_SCRIPTS_PER_USER = 5;
         const MAX_LINES = 3000;
 
-        // ========== ESTADO GLOBAL ==========
-        let currentUser = "";
-        let isMaster = false;
+        // ========== ESTADO GLOBAL & PERSISTENCIA ==========
+        let currentUser = localStorage.getItem('z_current_user') || "";
+        let isMaster = localStorage.getItem('z_is_master') === 'true';
         let userScriptCount = 0;
         let editScriptId = "";
         let editScriptData = null;
@@ -686,26 +686,6 @@
             }
         }
 
-        function configurarSesionActiva(user) {
-            currentUser = user;
-            isMaster = (user === 'admin123');
-
-            const badge = document.getElementById('user-role-badge');
-            if (isMaster) {
-                badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
-                badge.style.color = "#ef4444";
-                badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
-            } else {
-                badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${currentUser}`;
-                badge.style.color = "#34d399";
-                badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
-            }
-
-            // Guardar cookie/sesión local para que no tenga que iniciar sesión de nuevo
-            localStorage.setItem('zprotector_user', currentUser);
-            cambiarVista('dashboard');
-        }
-
         function ejecutarAuth() {
             const rawUser = document.getElementById('auth-user-input').value.trim();
             const pass = document.getElementById('auth-pass-input').value.trim();
@@ -763,8 +743,29 @@
                         return;
                     }
 
-                    configurarSesionActiva(user);
+                    currentUser = user;
+                    isMaster = (user === 'admin123');
+
+                    // Guardar sesión persistente en localStorage
+                    localStorage.setItem('z_current_user', currentUser);
+                    localStorage.setItem('z_is_master', isMaster ? 'true' : 'false');
+
+                    actualizarBadgeRol();
+                    cambiarVista('dashboard');
                 });
+            }
+        }
+
+        function actualizarBadgeRol() {
+            const badge = document.getElementById('user-role-badge');
+            if (isMaster) {
+                badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
+                badge.style.color = "#ef4444";
+                badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
+            } else {
+                badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${currentUser}`;
+                badge.style.color = "#34d399";
+                badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
             }
         }
 
@@ -930,8 +931,10 @@
         }
 
         function cerrarSesion() {
-            // Borrar la memoria guardada (cookie local)
-            localStorage.removeItem('zprotector_user');
+            // Limpiar localStorage
+            localStorage.removeItem('z_current_user');
+            localStorage.removeItem('z_is_master');
+
             currentUser = '';
             isMaster = false;
             document.getElementById('auth-user-input').value = '';
@@ -970,29 +973,17 @@
             document.getElementById('line-numbers-edit').scrollTop = this.scrollTop;
         });
 
-        // ========== INICIALIZACIÓN CON VERIFICACIÓN DE SESIÓN GUARDADA ==========
-        const savedUser = localStorage.getItem('zprotector_user');
-        if (savedUser) {
-            // Si ya hay sesión guardada, verifica rápido que el usuario siga existiendo en Firebase
-            db.ref('users/' + savedUser).once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    configurarSesionActiva(savedUser);
-                } else {
-                    localStorage.removeItem('zprotector_user');
-                    toggleAuthTab('signin');
-                    cambiarVista('login');
-                }
-            }).catch(() => {
-                // Si falla por internet, entra directo con lo guardado
-                configurarSesionActiva(savedUser);
-            });
+        // Inicialización y comprobación de sesión persistente
+        toggleAuthTab('signin');
+        actualizarLineas('script-code', 'line-numbers-create', 'line-numbers-create');
+        actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
+
+        if (currentUser) {
+            actualizarBadgeRol();
+            cambiarVista('dashboard');
         } else {
-            toggleAuthTab('signin');
             cambiarVista('login');
         }
-
-        actualizarLineas('script-code', 'line-numbers-create', 'line-counter-create');
-        actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
     </script>
 </body>
 </html>
