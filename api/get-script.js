@@ -34,14 +34,15 @@ export default async function handler(req, res) {
     const { id } = req.query;
     const _0xa = (req.headers[_0x_dec(0)] || '').toLowerCase();
     const _0xua = (req.headers[_0x_dec(1)] || '').toLowerCase();
+    const _0xsec = !!req.headers['sec-ch-ua'];
 
     res.setHeader(_0x_dec(2), _0x_dec(3));
 
-    // 1. Confirmar si la petición viene directamente de Roblox
-    const isRoblox = _0xua.includes('roblox') || _0xua.includes('robloxapp');
+    // 1. Detectar si la petición viene de un navegador web (Chrome, Edge, Safari)
+    const isBrowser = _0xsec || _0xa.includes(_0x_dec(4)); // text/html
 
-    // 2. Lista de identificadores de bots de Discord, librerías HTTP, scrapers y navegadores
-    const isBotOrUnauthorized = 
+    // 2. Detectar si la petición viene de un bot de Discord o script de extracción
+    const isBot = 
         !_0xua ||
         _0xua.includes('discord') || 
         _0xua.includes('python') || 
@@ -49,15 +50,13 @@ export default async function handler(req, res) {
         _0xua.includes('node') || 
         _0xua.includes('curl') || 
         _0xua.includes('wget') || 
-        _0xua.includes('go-http-client') || 
-        _0xua.includes('postman') || 
-        _0xua.includes('mozilla') || 
-        _0xua.includes('chrome') || 
-        _0xua.includes('safari') || 
-        _0xa.includes(_0x_dec(4));
+        _0xua.includes('go-http-client') ||
+        _0xua.includes('java') ||
+        _0xua.includes('bot') ||
+        _0xua.includes('crawler');
 
-    // 3. Regla estricta: Bloquear si NO es Roblox O si coincide con firmas de bots/navegadores
-    if (!isRoblox || isBotOrUnauthorized) {
+    // 3. Bloquear SOLO si es un navegador de internet o un bot conocido
+    if (isBrowser || isBot) {
         const _0xcnt = req.headers[_0x_dec(5)] || _0x_dec(7);
         const _0xcty = req.headers[_0x_dec(6)] || _0x_dec(8);
 
