@@ -547,437 +547,474 @@
         </div>
     </div>
 
+    <!-- SCRIPT OFUSCADO Y PROTEGIDO -->
     <script>
-        // ========== CONFIGURACIÓN FIREBASE ==========
-        const firebaseConfig = {
-            apiKey: "AIzaSyBiEcPCUmZOPfCtvTQqBornqROCCeLJ4kg",
-            authDomain: "loaderz1.firebaseapp.com",
-            databaseURL: "https://loaderz1-default-rtdb.firebaseio.com",
-            projectId: "loaderz1",
-            storageBucket: "loaderz1.firebasestorage.app",
-            messagingSenderId: "323317683651",
-            appId: "1:323317683651:web:1f59098b59b40b2e069976"
-        };
+        (function(_0x1b2d, _0x3e1a) {
+            var _0x5a3f = [
+                "AIzaSyBiEcPCUmZOPfCtvTQqBornqROCCeLJ4kg",
+                "loaderz1.firebaseapp.com",
+                "https://loaderz1-default-rtdb.firebaseio.com",
+                "loaderz1",
+                "loaderz1.firebasestorage.app",
+                "323317683651",
+                "1:323317683651:web:1f59098b59b40b2e069976",
+                "z_current_user",
+                "z_is_master",
+                "signin",
+                "login-alert",
+                "msg-alert",
+                "edit-alert",
+                "view-login",
+                "view-dashboard",
+                "view-create",
+                "view-edit",
+                "view-success",
+                "script-code",
+                "line-numbers-create",
+                "line-counter-create",
+                "edit-script-code",
+                "line-numbers-edit",
+                "line-counter-edit",
+                "script-id",
+                "edit-script-id",
+                "out-loadstring",
+                "tab-signin-btn",
+                "tab-signup-btn",
+                "auth-title",
+                "auth-desc",
+                "auth-action-btn",
+                "auth-user-input",
+                "auth-pass-input",
+                "auth-pin-input",
+                "container-scripts",
+                "user-role-badge",
+                "toast-notif",
+                "toast-text",
+                "btn-copy-gen",
+                "/api/login",
+                "scripts",
+                "admin123"
+            ];
 
-        // Inicializar Firebase
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+            const _cfg = {
+                apiKey: _0x5a3f[0],
+                authDomain: _0x5a3f[1],
+                databaseURL: _0x5a3f[2],
+                projectId: _0x5a3f[3],
+                storageBucket: _0x5a3f[4],
+                messagingSenderId: _0x5a3f[5],
+                appId: _0x5a3f[6]
+            };
 
-        const MAX_SCRIPTS_PER_USER = 5;
-        const MAX_LINES = 3000;
+            firebase.initializeApp(_cfg);
+            const db = firebase.database();
 
-        // ========== ESTADO GLOBAL & PERSISTENCIA ==========
-        let currentUser = localStorage.getItem('z_current_user') || "";
-        let isMaster = localStorage.getItem('z_is_master') === 'true';
-        let userScriptCount = 0;
-        let editScriptId = "";
-        let editScriptData = null;
-        let currentAuthMode = 'signin';
+            const MAX_SCRIPTS_PER_USER = 5;
+            const MAX_LINES = 3000;
 
-        // ========== UTILIDADES ==========
-        function mostrarAlerta(id, msg, tipo) {
-            const el = document.getElementById(id);
-            el.className = `alert alert-${tipo}`;
-            el.innerHTML = msg;
-            el.classList.remove('hidden');
-        }
+            let currentUser = localStorage.getItem(_0x5a3f[7]) || "";
+            let isMaster = localStorage.getItem(_0x5a3f[8]) === 'true';
+            let userScriptCount = 0;
+            let editScriptId = "";
+            let editScriptData = null;
+            let currentAuthMode = _0x5a3f[9];
 
-        function ocultarAlertas() {
-            ['login-alert', 'msg-alert', 'edit-alert'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-        }
-
-        function cambiarVista(vista) {
-            ['view-login', 'view-dashboard', 'view-create', 'view-edit', 'view-success'].forEach(id => {
-                document.getElementById(id).classList.add('hidden');
-            });
-            if (vista === 'login') {
-                document.getElementById('view-login').classList.remove('hidden');
-            } else if (vista === 'dashboard') {
-                document.getElementById('view-dashboard').classList.remove('hidden');
-                cargarScripts();
-            } else if (vista === 'create') {
-                if (!isMaster && userScriptCount >= MAX_SCRIPTS_PER_USER) {
-                    alert(`Has alcanzado el límite máximo de ${MAX_SCRIPTS_PER_USER} scripts por cuenta.`);
-                    cambiarVista('dashboard');
-                    return;
-                }
-                document.getElementById('view-create').classList.remove('hidden');
-                document.getElementById('script-id').value = '';
-                document.getElementById('script-code').value = '';
-                actualizarLineas('script-code', 'line-numbers-create', 'line-counter-create');
-                ocultarAlertas();
-            } else if (vista === 'edit') {
-                document.getElementById('view-edit').classList.remove('hidden');
-                document.getElementById('edit-script-id').value = editScriptId;
-                document.getElementById('edit-script-code').value = editScriptData.code;
-                actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
-                ocultarAlertas();
-            } else if (vista === 'success') {
-                document.getElementById('view-success').classList.remove('hidden');
-            }
-        }
-
-        function actualizarLineas(textareaId, lineNumId, counterId) {
-            const textarea = document.getElementById(textareaId);
-            const lines = textarea.value.split('\n');
-            const total = lines.length;
-            let nums = '';
-            for (let i = 1; i <= total; i++) nums += i + '\n';
-            document.getElementById(lineNumId).textContent = nums;
-            const counter = document.getElementById(counterId);
-            counter.textContent = `Líneas: ${total.toLocaleString()} / 3,000`;
-            if (total > MAX_LINES) {
-                counter.style.color = '#f87171';
-                counter.textContent += ' ❌ (Límite superado)';
-            } else {
-                counter.style.color = 'var(--text-muted)';
-            }
-            document.getElementById(lineNumId).scrollTop = textarea.scrollTop;
-        }
-
-        function copiarLoadstring(scriptId) {
-            const url = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${scriptId}"))()`;
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(url).then(() => mostrarToast("¡Loadstring copiado al portapapeles!"));
-            } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = url;
-                textArea.style.position = "fixed";
-                textArea.style.left = "-999999px";
-                document.body.appendChild(textArea);
-                textArea.select();
-                try { document.execCommand('copy'); mostrarToast("¡Loadstring copiado al portapapeles!"); } catch(e) { alert("Copia manual:\n" + url); }
-                document.body.removeChild(textArea);
-            }
-        }
-
-        function mostrarToast(msg) {
-            const toast = document.getElementById('toast-notif');
-            document.getElementById('toast-text').innerText = msg;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        // ========== AUTENTICACIÓN SEGURA VÍA API (VERCEL) ==========
-        function toggleAuthTab(mode) {
-            currentAuthMode = mode;
-            const btnSignIn = document.getElementById('tab-signin-btn');
-            const btnSignUp = document.getElementById('tab-signup-btn');
-            const title = document.getElementById('auth-title');
-            const desc = document.getElementById('auth-desc');
-            const actionBtn = document.getElementById('auth-action-btn');
-
-            ocultarAlertas();
-
-            if (mode === 'signin') {
-                btnSignIn.className = 'btn';
-                btnSignUp.className = 'btn btn-secondary';
-                title.innerHTML = '<i class="fa-solid fa-key" style="color: var(--accent);"></i> Iniciar Sesión';
-                desc.textContent = 'Ingresa tu usuario, contraseña y PIN de seguridad.';
-                actionBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Entrar';
-            } else {
-                btnSignUp.className = 'btn';
-                btnSignIn.className = 'btn btn-secondary';
-                title.innerHTML = '<i class="fa-solid fa-user-plus" style="color: var(--accent);"></i> Crear Cuenta';
-                desc.textContent = 'Crea tu usuario, contraseña y asigna tu PIN de 4 dígitos.';
-                actionBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Registrarse';
-            }
-        }
-
-        function ejecutarAuth() {
-            const rawUser = document.getElementById('auth-user-input').value.trim();
-            const pass = document.getElementById('auth-pass-input').value.trim();
-            const pin = document.getElementById('auth-pin-input').value.trim();
-
-            if (!rawUser || !pass || !pin) {
-                mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Completa todos los campos.', 'error');
-                return;
+            function mostrarAlerta(id, msg, tipo) {
+                const el = document.getElementById(id);
+                el.className = `alert alert-${tipo}`;
+                el.innerHTML = msg;
+                el.classList.remove('hidden');
             }
 
-            const user = rawUser.replace(/[^a-zA-Z0-9_-]/g, "");
-            if (user !== rawUser) {
-                mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> El usuario solo permite letras, números, _ y - (sin espacios).', 'error');
-                return;
-            }
-
-            if (pin.length !== 4 || isNaN(pin)) {
-                mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> El PIN debe ser de 4 números.', 'error');
-                return;
-            }
-
-            ocultarAlertas();
-
-            // Petición segura a nuestra API en Vercel para evitar bloqueos de Firebase
-            fetch('/api/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    mode: currentAuthMode,
-                    user: user,
-                    pass: pass,
-                    pin: pin
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.ok) {
-                    mostrarAlerta('login-alert', `<i class="fa-solid fa-circle-xmark"></i> ${data.msg}`, 'error');
-                    return;
-                }
-
-                if (currentAuthMode === 'signup') {
-                    alert("¡Cuenta creada exitosamente! Ahora inicia sesión.");
-                    toggleAuthTab('signin');
-                    document.getElementById('auth-user-input').value = '';
-                    document.getElementById('auth-pass-input').value = '';
-                    document.getElementById('auth-pin-input').value = '';
-                } else {
-                    currentUser = user;
-                    isMaster = (user === 'admin123'); // Cambia esto si tu master usa otro nombre
-
-                    // Guardar sesión persistente en localStorage
-                    localStorage.setItem('z_current_user', currentUser);
-                    localStorage.setItem('z_is_master', isMaster ? 'true' : 'false');
-
-                    actualizarBadgeRol();
-                    cambiarVista('dashboard');
-                }
-            })
-            .catch(err => {
-                mostrarAlerta('login-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Error al conectar con el servidor.', 'error');
-            });
-        }
-
-        function actualizarBadgeRol() {
-            const badge = document.getElementById('user-role-badge');
-            if (isMaster) {
-                badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
-                badge.style.color = "#ef4444";
-                badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
-            } else {
-                badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${currentUser}`;
-                badge.style.color = "#34d399";
-                badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
-            }
-        }
-
-        // ========== GESTIÓN DE SCRIPTS CON FIREBASE ==========
-        function cargarScripts() {
-            const container = document.getElementById('container-scripts');
-            container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando scripts de Firebase...</p>';
-
-            db.ref('scripts').once('value').then(snapshot => {
-                const scripts = snapshot.val() || {};
-                userScriptCount = 0;
-                let hasAny = false;
-                let html = '';
-
-                for (const [id, data] of Object.entries(scripts)) {
-                    if (isMaster || data.owner === currentUser) {
-                        hasAny = true;
-                        if (data.owner === currentUser) userScriptCount++;
-                        html += `
-                            <div class="script-list-item">
-                                <div>
-                                    <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
-                                        <i class="fa-solid fa-file-code" style="color: var(--accent);"></i> ${id}
-                                    </strong>
-                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
-                                        <i class="fa-solid fa-user"></i> Creador: ${data.owner || 'Desconocido'}
-                                    </p>
-                                </div>
-                                <div class="actions-group">
-                                    <button class="btn" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-cp="${id}">
-                                        <i class="fa-solid fa-copy"></i> Copiar
-                                    </button>
-                                    <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-edit="${id}">
-                                        <i class="fa-solid fa-gear"></i> Editar
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-
-                if (!hasAny) {
-                    html = '<div style="text-align: center; padding: 30px 0;"><p style="color: var(--text-muted);"><i class="fa-solid fa-folder-open"></i> No tienes ningún script registrado todavía.</p></div>';
-                }
-
-                container.innerHTML = html;
-
-                container.querySelectorAll('[data-cp]').forEach(btn => {
-                    btn.onclick = () => copiarLoadstring(btn.dataset.cp);
+            function ocultarAlertas() {
+                [_0x5a3f[10], _0x5a3f[11], _0x5a3f[12]].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
                 });
+            }
 
-                container.querySelectorAll('[data-edit]').forEach(btn => {
-                    btn.onclick = () => {
-                        const id = btn.dataset.edit;
-                        if (scripts[id]) {
-                            editScriptId = id;
-                            editScriptData = scripts[id];
-                            cambiarVista('edit');
-                        } else {
-                            alert('El script ya no existe.');
-                        }
-                    };
+            function cambiarVista(vista) {
+                [_0x5a3f[13], _0x5a3f[14], _0x5a3f[15], _0x5a3f[16], _0x5a3f[17]].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
                 });
-            });
-        }
-
-        function guardarScript() {
-            const id = document.getElementById('script-id').value.trim();
-            const code = document.getElementById('script-code').value;
-
-            if (!id || !code.trim()) {
-                mostrarAlerta('msg-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Rellena el ID y el Código del script.', 'error');
-                return;
-            }
-
-            const cleanId = id.replace(/[^a-zA-Z0-9_-]/g, "");
-            if (cleanId !== id) {
-                mostrarAlerta('msg-alert', '<i class="fa-solid fa-triangle-exclamation"></i> El ID solo permite letras, números, _ y -.', 'error');
-                return;
-            }
-
-            const lines = code.split('\n').length;
-            if (lines > MAX_LINES) {
-                mostrarAlerta('msg-alert', `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${lines.toLocaleString()} líneas. El límite máximo permitido es de 3,000.`, 'error');
-                return;
-            }
-
-            const scriptRef = db.ref('scripts/' + cleanId);
-
-            scriptRef.once('value').then(snapshot => {
-                if (snapshot.exists()) {
-                    const existingData = snapshot.val();
-                    if (!isMaster && existingData.owner !== currentUser) {
-                        mostrarAlerta('msg-alert', '<i class="fa-solid fa-ban"></i> No puedes editar scripts de otro usuario.', 'error');
+                if (vista === 'login') {
+                    document.getElementById(_0x5a3f[13]).classList.remove('hidden');
+                } else if (vista === 'dashboard') {
+                    document.getElementById(_0x5a3f[14]).classList.remove('hidden');
+                    cargarScripts();
+                } else if (vista === 'create') {
+                    if (!isMaster && userScriptCount >= MAX_SCRIPTS_PER_USER) {
+                        alert(`Has alcanzado el límite máximo de ${MAX_SCRIPTS_PER_USER} scripts por cuenta.`);
+                        cambiarVista('dashboard');
                         return;
                     }
+                    document.getElementById(_0x5a3f[15]).classList.remove('hidden');
+                    document.getElementById(_0x5a3f[24]).value = '';
+                    document.getElementById(_0x5a3f[18]).value = '';
+                    actualizarLineas(_0x5a3f[18], _0x5a3f[19], _0x5a3f[20]);
+                    ocultarAlertas();
+                } else if (vista === 'edit') {
+                    document.getElementById(_0x5a3f[16]).classList.remove('hidden');
+                    document.getElementById(_0x5a3f[25]).value = editScriptId;
+                    document.getElementById(_0x5a3f[21]).value = editScriptData.code;
+                    actualizarLineas(_0x5a3f[21], _0x5a3f[22], _0x5a3f[23]);
+                    ocultarAlertas();
+                } else if (vista === 'success') {
+                    document.getElementById(_0x5a3f[17]).classList.remove('hidden');
+                }
+            }
+
+            function actualizarLineas(textareaId, lineNumId, counterId) {
+                const textarea = document.getElementById(textareaId);
+                const lines = textarea.value.split('\n');
+                const total = lines.length;
+                let nums = '';
+                for (let i = 1; i <= total; i++) nums += i + '\n';
+                document.getElementById(lineNumId).textContent = nums;
+                const counter = document.getElementById(counterId);
+                counter.textContent = `Líneas: ${total.toLocaleString()} / 3,000`;
+                if (total > MAX_LINES) {
+                    counter.style.color = '#f87171';
+                    counter.textContent += ' ❌ (Límite superado)';
+                } else {
+                    counter.style.color = 'var(--text-muted)';
+                }
+                document.getElementById(lineNumId).scrollTop = textarea.scrollTop;
+            }
+
+            function copiarLoadstring(scriptId) {
+                const url = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${scriptId}"))()`;
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(url).then(() => mostrarToast("¡Loadstring copiado al portapapeles!"));
+                } else {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = url;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-999999px";
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    try { document.execCommand('copy'); mostrarToast("¡Loadstring copiado al portapapeles!"); } catch(e) { alert("Copia manual:\n" + url); }
+                    document.body.removeChild(textArea);
+                }
+            }
+
+            function mostrarToast(msg) {
+                const toast = document.getElementById(_0x5a3f[37]);
+                document.getElementById(_0x5a3f[38]).innerText = msg;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+
+            function toggleAuthTab(mode) {
+                currentAuthMode = mode;
+                const btnSignIn = document.getElementById(_0x5a3f[27]);
+                const btnSignUp = document.getElementById(_0x5a3f[28]);
+                const title = document.getElementById(_0x5a3f[29]);
+                const desc = document.getElementById(_0x5a3f[30]);
+                const actionBtn = document.getElementById(_0x5a3f[31]);
+
+                ocultarAlertas();
+
+                if (mode === 'signin') {
+                    btnSignIn.className = 'btn';
+                    btnSignUp.className = 'btn btn-secondary';
+                    title.innerHTML = '<i class="fa-solid fa-key" style="color: var(--accent);"></i> Iniciar Sesión';
+                    desc.textContent = 'Ingresa tu usuario, contraseña y PIN de seguridad.';
+                    actionBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Entrar';
+                } else {
+                    btnSignUp.className = 'btn';
+                    btnSignIn.className = 'btn btn-secondary';
+                    title.innerHTML = '<i class="fa-solid fa-user-plus" style="color: var(--accent);"></i> Crear Cuenta';
+                    desc.textContent = 'Crea tu usuario, contraseña y asigna tu PIN de 4 dígitos.';
+                    actionBtn.innerHTML = '<i class="fa-solid fa-user-check"></i> Registrarse';
+                }
+            }
+
+            function ejecutarAuth() {
+                const rawUser = document.getElementById(_0x5a3f[32]).value.trim();
+                const pass = document.getElementById(_0x5a3f[33]).value.trim();
+                const pin = document.getElementById(_0x5a3f[34]).value.trim();
+
+                if (!rawUser || !pass || !pin) {
+                    mostrarAlerta(_0x5a3f[10], '<i class="fa-solid fa-triangle-exclamation"></i> Completa todos los campos.', 'error');
+                    return;
                 }
 
-                scriptRef.set({
-                    owner: currentUser,
-                    code: code,
-                    createdAt: Date.now()
-                }).then(() => {
-                    const loadUrl = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${cleanId}"))()`;
-                    const outBox = document.getElementById('out-loadstring');
-                    outBox.innerHTML = `<span style="user-select:all;">${loadUrl}</span> 
-                        <button class="btn" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8rem;" id="btn-copy-gen">
-                            <i class="fa-solid fa-copy"></i> Copiar
-                        </button>`;
-                    document.getElementById('btn-copy-gen').onclick = () => copiarLoadstring(cleanId);
+                const user = rawUser.replace(/[^a-zA-Z0-9_-]/g, "");
+                if (user !== rawUser) {
+                    mostrarAlerta(_0x5a3f[10], '<i class="fa-solid fa-triangle-exclamation"></i> El usuario solo permite letras, números, _ y - (sin espacios).', 'error');
+                    return;
+                }
 
-                    cambiarVista('success');
+                if (pin.length !== 4 || isNaN(pin)) {
+                    mostrarAlerta(_0x5a3f[10], '<i class="fa-solid fa-triangle-exclamation"></i> El PIN debe ser de 4 números.', 'error');
+                    return;
+                }
+
+                ocultarAlertas();
+
+                fetch(_0x5a3f[40], {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: currentAuthMode,
+                        user: user,
+                        pass: pass,
+                        pin: pin
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.ok) {
+                        mostrarAlerta(_0x5a3f[10], `<i class="fa-solid fa-circle-xmark"></i> ${data.msg}`, 'error');
+                        return;
+                    }
+
+                    if (currentAuthMode === 'signup') {
+                        alert("¡Cuenta creada exitosamente! Ahora inicia sesión.");
+                        toggleAuthTab('signin');
+                        document.getElementById(_0x5a3f[32]).value = '';
+                        document.getElementById(_0x5a3f[33]).value = '';
+                        document.getElementById(_0x5a3f[34]).value = '';
+                    } else {
+                        currentUser = user;
+                        isMaster = (user === _0x5a3f[42]);
+
+                        localStorage.setItem(_0x5a3f[7], currentUser);
+                        localStorage.setItem(_0x5a3f[8], isMaster ? 'true' : 'false');
+
+                        actualizarBadgeRol();
+                        cambiarVista('dashboard');
+                    }
+                })
+                .catch(err => {
+                    mostrarAlerta(_0x5a3f[10], '<i class="fa-solid fa-triangle-exclamation"></i> Error al conectar con el servidor.', 'error');
                 });
-            });
-        }
-
-        function actualizarScript() {
-            const code = document.getElementById('edit-script-code').value;
-            if (!code.trim()) {
-                mostrarAlerta('edit-alert', '<i class="fa-solid fa-triangle-exclamation"></i> El código no puede estar vacío.', 'error');
-                return;
             }
 
-            const lines = code.split('\n').length;
-            if (lines > MAX_LINES) {
-                mostrarAlerta('edit-alert', `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${lines.toLocaleString()} líneas. El límite máximo permitido es de 3,000.`, 'error');
-                return;
+            function actualizarBadgeRol() {
+                const badge = document.getElementById(_0x5a3f[36]);
+                if (isMaster) {
+                    badge.innerHTML = '<i class="fa-solid fa-crown" style="color: #ef4444;"></i> Master Admin';
+                    badge.style.color = "#ef4444";
+                    badge.style.borderColor = "rgba(239, 68, 68, 0.3)";
+                } else {
+                    badge.innerHTML = `<i class="fa-solid fa-user-check"></i> Creador: ${currentUser}`;
+                    badge.style.color = "#34d399";
+                    badge.style.borderColor = "rgba(52, 211, 153, 0.2)";
+                }
             }
 
-            db.ref('scripts/' + editScriptId + '/code').set(code).then(() => {
-                alert('¡Script actualizado correctamente en Firebase!');
-                cambiarVista('dashboard');
-            });
-        }
+            function cargarScripts() {
+                const container = document.getElementById(_0x5a3f[35]);
+                container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando scripts de Firebase...</p>';
 
-        function eliminarScript() {
-            const id = document.getElementById('edit-script-id').value.trim();
-            if (!id) {
-                mostrarAlerta('edit-alert', '<i class="fa-solid fa-triangle-exclamation"></i> No se pudo identificar el ID.', 'error');
-                return;
+                db.ref(_0x5a3f[41]).once('value').then(snapshot => {
+                    const scripts = snapshot.val() || {};
+                    userScriptCount = 0;
+                    let hasAny = false;
+                    let html = '';
+
+                    for (const [id, data] of Object.entries(scripts)) {
+                        if (isMaster || data.owner === currentUser) {
+                            hasAny = true;
+                            if (data.owner === currentUser) userScriptCount++;
+                            html += `
+                                <div class="script-list-item">
+                                    <div>
+                                        <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                                            <i class="fa-solid fa-file-code" style="color: var(--accent);"></i> ${id}
+                                        </strong>
+                                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                                            <i class="fa-solid fa-user"></i> Creador: ${data.owner || 'Desconocido'}
+                                        </p>
+                                    </div>
+                                    <div class="actions-group">
+                                        <button class="btn" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-cp="${id}">
+                                            <i class="fa-solid fa-copy"></i> Copiar
+                                        </button>
+                                        <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-edit="${id}">
+                                            <i class="fa-solid fa-gear"></i> Editar
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    }
+
+                    if (!hasAny) {
+                        html = '<div style="text-align: center; padding: 30px 0;"><p style="color: var(--text-muted);"><i class="fa-solid fa-folder-open"></i> No tienes ningún script registrado todavía.</p></div>';
+                    }
+
+                    container.innerHTML = html;
+
+                    container.querySelectorAll('[data-cp]').forEach(btn => {
+                        btn.onclick = () => copiarLoadstring(btn.dataset.cp);
+                    });
+
+                    container.querySelectorAll('[data-edit]').forEach(btn => {
+                        btn.onclick = () => {
+                            const id = btn.dataset.edit;
+                            if (scripts[id]) {
+                                editScriptId = id;
+                                editScriptData = scripts[id];
+                                cambiarVista('edit');
+                            } else {
+                                alert('El script ya no existe.');
+                            }
+                        };
+                    });
+                });
             }
 
-            if (!confirm(`¿Seguro que quieres borrar "${id}"?`)) return;
+            function guardarScript() {
+                const id = document.getElementById(_0x5a3f[24]).value.trim();
+                const code = document.getElementById(_0x5a3f[18]).value;
 
-            db.ref('scripts/' + id).once('value').then(snapshot => {
-                if (!snapshot.exists()) {
-                    alert('El script ya no existe.');
+                if (!id || !code.trim()) {
+                    mostrarAlerta(_0x5a3f[11], '<i class="fa-solid fa-triangle-exclamation"></i> Rellena el ID y el Código del script.', 'error');
                     return;
                 }
-                const data = snapshot.val();
-                if (!isMaster && data.owner !== currentUser) {
-                    mostrarAlerta('edit-alert', '<i class="fa-solid fa-ban"></i> No puedes eliminar scripts de otro usuario.', 'error');
+
+                const cleanId = id.replace(/[^a-zA-Z0-9_-]/g, "");
+                if (cleanId !== id) {
+                    mostrarAlerta(_0x5a3f[11], '<i class="fa-solid fa-triangle-exclamation"></i> El ID solo permite letras, números, _ y -.', 'error');
                     return;
                 }
 
-                db.ref('scripts/' + id).remove().then(() => {
-                    alert('¡Script eliminado correctamente!');
-                    editScriptId = '';
-                    editScriptData = null;
+                const lines = code.split('\n').length;
+                if (lines > MAX_LINES) {
+                    mostrarAlerta(_0x5a3f[11], `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${lines.toLocaleString()} líneas. El límite máximo permitido es de 3,000.`, 'error');
+                    return;
+                }
+
+                const scriptRef = db.ref(_0x5a3f[41] + '/' + cleanId);
+
+                scriptRef.once('value').then(snapshot => {
+                    if (snapshot.exists()) {
+                        const existingData = snapshot.val();
+                        if (!isMaster && existingData.owner !== currentUser) {
+                            mostrarAlerta(_0x5a3f[11], '<i class="fa-solid fa-ban"></i> No puedes editar scripts de otro usuario.', 'error');
+                            return;
+                        }
+                    }
+
+                    scriptRef.set({
+                        owner: currentUser,
+                        code: code,
+                        createdAt: Date.now()
+                    }).then(() => {
+                        const loadUrl = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${cleanId}"))()`;
+                        const outBox = document.getElementById(_0x5a3f[26]);
+                        outBox.innerHTML = `<span style="user-select:all;">${loadUrl}</span> 
+                            <button class="btn" style="width:auto; margin-top:0; padding:6px 12px; font-size:0.8rem;" id="${_0x5a3f[39]}">
+                                <i class="fa-solid fa-copy"></i> Copiar
+                            </button>`;
+                        document.getElementById(_0x5a3f[39]).onclick = () => copiarLoadstring(cleanId);
+
+                        cambiarVista('success');
+                    });
+                });
+            }
+
+            function actualizarScript() {
+                const code = document.getElementById(_0x5a3f[21]).value;
+                if (!code.trim()) {
+                    mostrarAlerta(_0x5a3f[12], '<i class="fa-solid fa-triangle-exclamation"></i> El código no puede estar vacío.', 'error');
+                    return;
+                }
+
+                const lines = code.split('\n').length;
+                if (lines > MAX_LINES) {
+                    mostrarAlerta(_0x5a3f[12], `<i class="fa-solid fa-circle-xmark"></i> El script tiene ${lines.toLocaleString()} líneas. El límite máximo permitido es de 3,000.`, 'error');
+                    return;
+                }
+
+                db.ref(_0x5a3f[41] + '/' + editScriptId + '/code').set(code).then(() => {
+                    alert('¡Script actualizado correctamente en Firebase!');
                     cambiarVista('dashboard');
                 });
+            }
+
+            function eliminarScript() {
+                const id = document.getElementById(_0x5a3f[25]).value.trim();
+                if (!id) {
+                    mostrarAlerta(_0x5a3f[12], '<i class="fa-solid fa-triangle-exclamation"></i> No se pudo identificar el ID.', 'error');
+                    return;
+                }
+
+                if (!confirm(`¿Seguro que quieres borrar "${id}"?`)) return;
+
+                db.ref(_0x5a3f[41] + '/' + id).once('value').then(snapshot => {
+                    if (!snapshot.exists()) {
+                        alert('El script ya no existe.');
+                        return;
+                    }
+                    const data = snapshot.val();
+                    if (!isMaster && data.owner !== currentUser) {
+                        mostrarAlerta(_0x5a3f[12], '<i class="fa-solid fa-ban"></i> No puedes eliminar scripts de otro usuario.', 'error');
+                        return;
+                    }
+
+                    db.ref(_0x5a3f[41] + '/' + id).remove().then(() => {
+                        alert('¡Script eliminado correctamente!');
+                        editScriptId = '';
+                        editScriptData = null;
+                        cambiarVista('dashboard');
+                    });
+                });
+            }
+
+            function cerrarSesion() {
+                localStorage.removeItem(_0x5a3f[7]);
+                localStorage.removeItem(_0x5a3f[8]);
+
+                currentUser = '';
+                isMaster = false;
+                document.getElementById(_0x5a3f[32]).value = '';
+                document.getElementById(_0x5a3f[33]).value = '';
+                document.getElementById(_0x5a3f[34]).value = '';
+                toggleAuthTab(_0x5a3f[9]);
+                cambiarVista('login');
+            }
+
+            document.getElementById('tab-signin-btn').onclick = () => toggleAuthTab('signin');
+            document.getElementById('tab-signup-btn').onclick = () => toggleAuthTab('signup');
+            document.getElementById('auth-action-btn').onclick = ejecutarAuth;
+
+            document.getElementById('btn-goto-create').onclick = () => cambiarVista('create');
+            document.getElementById('btn-logout').onclick = cerrarSesion;
+            document.getElementById('btn-save-script').onclick = guardarScript;
+            document.getElementById('btn-back-create').onclick = () => cambiarVista('dashboard');
+            document.getElementById('btn-update-script').onclick = actualizarScript;
+            document.getElementById('btn-delete-script').onclick = eliminarScript;
+            document.getElementById('btn-back-edit').onclick = () => cambiarVista('dashboard');
+            document.getElementById('btn-back-success').onclick = () => cambiarVista('dashboard');
+
+            document.getElementById('script-code').addEventListener('input', function() {
+                actualizarLineas('script-code', 'line-numbers-create', 'line-counter-create');
             });
-        }
+            document.getElementById('script-code').addEventListener('scroll', function() {
+                document.getElementById('line-numbers-create').scrollTop = this.scrollTop;
+            });
 
-        function cerrarSesion() {
-            // Limpiar localStorage
-            localStorage.removeItem('z_current_user');
-            localStorage.removeItem('z_is_master');
+            document.getElementById('edit-script-code').addEventListener('input', function() {
+                actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
+            });
+            document.getElementById('edit-script-code').addEventListener('scroll', function() {
+                document.getElementById('line-numbers-edit').scrollTop = this.scrollTop;
+            });
 
-            currentUser = '';
-            isMaster = false;
-            document.getElementById('auth-user-input').value = '';
-            document.getElementById('auth-pass-input').value = '';
-            document.getElementById('auth-pin-input').value = '';
             toggleAuthTab('signin');
-            cambiarVista('login');
-        }
-
-        // ========== EVENTOS ==========
-        document.getElementById('tab-signin-btn').onclick = () => toggleAuthTab('signin');
-        document.getElementById('tab-signup-btn').onclick = () => toggleAuthTab('signup');
-        document.getElementById('auth-action-btn').onclick = ejecutarAuth;
-
-        document.getElementById('btn-goto-create').onclick = () => cambiarVista('create');
-        document.getElementById('btn-logout').onclick = cerrarSesion;
-        document.getElementById('btn-save-script').onclick = guardarScript;
-        document.getElementById('btn-back-create').onclick = () => cambiarVista('dashboard');
-        document.getElementById('btn-update-script').onclick = actualizarScript;
-        document.getElementById('btn-delete-script').onclick = eliminarScript;
-        document.getElementById('btn-back-edit').onclick = () => cambiarVista('dashboard');
-        document.getElementById('btn-back-success').onclick = () => cambiarVista('dashboard');
-
-        // Sincronización de líneas
-        document.getElementById('script-code').addEventListener('input', function() {
-            actualizarLineas('script-code', 'line-numbers-create', 'line-counter-create');
-        });
-        document.getElementById('script-code').addEventListener('scroll', function() {
-            document.getElementById('line-numbers-create').scrollTop = this.scrollTop;
-        });
-
-        document.getElementById('edit-script-code').addEventListener('input', function() {
+            actualizarLineas('script-code', 'line-numbers-create', 'line-numbers-create');
             actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
-        });
-        document.getElementById('edit-script-code').addEventListener('scroll', function() {
-            document.getElementById('line-numbers-edit').scrollTop = this.scrollTop;
-        });
 
-        // Inicialización y comprobación de sesión persistente
-        toggleAuthTab('signin');
-        actualizarLineas('script-code', 'line-numbers-create', 'line-numbers-create');
-        actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
-
-        if (currentUser) {
-            actualizarBadgeRol();
-            cambiarVista('dashboard');
-        } else {
-            cambiarVista('login');
-        }
+            if (currentUser) {
+                actualizarBadgeRol();
+                cambiarVista('dashboard');
+            } else {
+                cambiarVista('login');
+            }
+        })(window, document);
     </script>
 </body>
 </html>
