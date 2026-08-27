@@ -808,37 +808,47 @@
                 const container = document.getElementById(_0x5a3f[35]);
                 container.innerHTML = '<p style="color: var(--text-muted); text-align: center; padding: 30px;"><i class="fa-solid fa-spinner fa-spin"></i> Cargando scripts de Firebase...</p>';
 
-                db.ref(_0x5a3f[41]).once('value').then(snapshot => {
-                    const scripts = snapshot.val() || {};
+                db.ref('users/' + currentUser + '/user_scripts').once('value').then(async snapshot => {
+                    const myScriptsMap = snapshot.val() || {};
+                    const scriptIds = Object.keys(myScriptsMap);
                     userScriptCount = 0;
                     let hasAny = false;
                     let html = '';
+                    const scriptsData = {};
 
-                    for (const [id, data] of Object.entries(scripts)) {
-                        if (isMaster || data.owner === currentUser) {
-                            hasAny = true;
-                            if (data.owner === currentUser) userScriptCount++;
-                            html += `
-                                <div class="script-list-item">
-                                    <div>
-                                        <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
-                                            <i class="fa-solid fa-file-code" style="color: var(--accent);"></i> ${id}
-                                        </strong>
-                                        <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
-                                            <i class="fa-solid fa-user"></i> Creador: ${data.owner || 'Desconocido'}
-                                        </p>
-                                    </div>
-                                    <div class="actions-group">
-                                        <button class="btn" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-cp="${id}">
-                                            <i class="fa-solid fa-copy"></i> Copiar
-                                        </button>
-                                        <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-edit="${id}">
-                                            <i class="fa-solid fa-gear"></i> Editar
-                                        </button>
-                                    </div>
+                    const fetchPromises = scriptIds.map(id => 
+                        db.ref('scripts/' + id).once('value').then(s => {
+                            if (s.exists()) {
+                                scriptsData[id] = s.val();
+                            }
+                        })
+                    );
+
+                    await Promise.all(fetchPromises);
+
+                    for (const [id, data] of Object.entries(scriptsData)) {
+                        hasAny = true;
+                        userScriptCount++;
+                        html += `
+                            <div class="script-list-item">
+                                <div>
+                                    <strong style="color: white; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+                                        <i class="fa-solid fa-file-code" style="color: var(--accent);"></i> ${id}
+                                    </strong>
+                                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+                                        <i class="fa-solid fa-user"></i> Creador: ${data.owner || 'Desconocido'}
+                                    </p>
                                 </div>
-                            `;
-                        }
+                                <div class="actions-group">
+                                    <button class="btn" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-cp="${id}">
+                                        <i class="fa-solid fa-copy"></i> Copiar
+                                    </button>
+                                    <button class="btn btn-secondary" style="width: auto; padding: 8px 14px; margin-top:0; font-size:0.85rem;" data-edit="${id}">
+                                        <i class="fa-solid fa-gear"></i> Editar
+                                    </button>
+                                </div>
+                            </div>
+                        `;
                     }
 
                     if (!hasAny) {
@@ -854,9 +864,9 @@
                     container.querySelectorAll('[data-edit]').forEach(btn => {
                         btn.onclick = () => {
                             const id = btn.dataset.edit;
-                            if (scripts[id]) {
+                            if (scriptsData[id]) {
                                 editScriptId = id;
-                                editScriptData = scripts[id];
+                                editScriptData = scriptsData[id];
                                 cambiarVista('edit');
                             } else {
                                 alert('El script ya no existe.');
@@ -903,6 +913,8 @@
                         code: code,
                         createdAt: Date.now()
                     }).then(() => {
+                        db.ref('users/' + currentUser + '/user_scripts/' + cleanId).set(true);
+
                         const loadUrl = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${cleanId}"))()`;
                         const outBox = document.getElementById(_0x5a3f[26]);
                         outBox.innerHTML = `<span style="user-select:all;">${loadUrl}</span> 
@@ -956,6 +968,8 @@
                     }
 
                     db.ref(_0x5a3f[41] + '/' + id).remove().then(() => {
+                        db.ref('users/' + currentUser + '/user_scripts/' + id).remove();
+
                         alert('¡Script eliminado correctamente!');
                         editScriptId = '';
                         editScriptData = null;
@@ -1005,7 +1019,7 @@
             });
 
             toggleAuthTab('signin');
-            actualizarLineas('script-code', 'line-numbers-create', 'line-numbers-create');
+            actualizarLineas('script-code', 'line-numbers-create', 'line-counter-create');
             actualizarLineas('edit-script-code', 'line-numbers-edit', 'line-counter-edit');
 
             if (currentUser) {
