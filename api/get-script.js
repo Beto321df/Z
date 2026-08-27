@@ -37,11 +37,27 @@ export default async function handler(req, res) {
 
     res.setHeader(_0x_dec(2), _0x_dec(3));
 
-    // Comprobar si la petición viene de un ejecutor o app de Roblox
+    // 1. Confirmar si la petición viene directamente de Roblox
     const isRoblox = _0xua.includes('roblox') || _0xua.includes('robloxapp');
 
-    // Solo bloquear si proviene de navegador web común Y NO es Roblox
-    if ((_0xa.includes(_0x_dec(4)) || _0xua.includes('mozilla') || _0xua.includes('chrome') || _0xua.includes('safari')) && !isRoblox) {
+    // 2. Lista de identificadores de bots de Discord, librerías HTTP, scrapers y navegadores
+    const isBotOrUnauthorized = 
+        !_0xua ||
+        _0xua.includes('discord') || 
+        _0xua.includes('python') || 
+        _0xua.includes('axios') || 
+        _0xua.includes('node') || 
+        _0xua.includes('curl') || 
+        _0xua.includes('wget') || 
+        _0xua.includes('go-http-client') || 
+        _0xua.includes('postman') || 
+        _0xua.includes('mozilla') || 
+        _0xua.includes('chrome') || 
+        _0xua.includes('safari') || 
+        _0xa.includes(_0x_dec(4));
+
+    // 3. Regla estricta: Bloquear si NO es Roblox O si coincide con firmas de bots/navegadores
+    if (!isRoblox || isBotOrUnauthorized) {
         const _0xcnt = req.headers[_0x_dec(5)] || _0x_dec(7);
         const _0xcty = req.headers[_0x_dec(6)] || _0x_dec(8);
 
