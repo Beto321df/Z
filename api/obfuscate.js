@@ -18,7 +18,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Usar Buffer UTF-8 con llave rodante por posición (Matemáticamente exacto y seguro)
+        // 1. Usar Buffer UTF-8 con llave rodante por posición
         const utf8Buffer = Buffer.from(code, 'utf-8');
         const masterKey = Math.floor(Math.random() * 150) + 50;
         let hexStream = "";
@@ -29,7 +29,7 @@ export default async function handler(req, res) {
             hexStream += byteVal.toString(16).padStart(2, '0');
         }
 
-        // 2. Generar nombres aleatorios de variables para la VM
+        // 2. Generar nombres aleatorios de variables para la VM[cite: 9]
         const randName = () => "_0x" + Math.random().toString(36).substring(2, 9);
         const vmEnv = randName();
         const dataStr = randName();
@@ -39,39 +39,52 @@ export default async function handler(req, res) {
         const byteVal = randName();
         const stateVar = randName();
         
-        // Nuevas variables para Anti-Tamper y Estados Dinámicos
+        // Variables Anti-Tamper y Anti-Hook mejoradas
         const antiTamperFunc = randName();
         const subFunc = randName();
         const bxorFunc = randName();
+        const loadStrFunc = randName();
         
-        // IDs de estados caóticos y aleatorios (Aplanamiento Real)
+        // IDs de estados caóticos y aleatorios[cite: 9]
         const stateMain = Math.floor(Math.random() * 80000) + 10000;
         const stateNext = Math.floor(Math.random() * 80000) + 20000;
         const stateJunk = Math.floor(Math.random() * 80000) + 30000;
         const stateExit = 0;
 
-        // 3. Máquina de Estados Avanzada con Anti-Tamper y Junk States
-        const eliteObfuscatedLua = `-- [ ZProtector v4.3 Elite State-Machine VM + Anti-Tamper ]
+        // 3. Máquina de Estados Avanzada con Anti-Tamper y Bloqueo de Hooks
+        const eliteObfuscatedLua = `-- [ ZProtector v4.4 Elite State-Machine VM + Hardened Anti-Tamper ]
 local function ${vmEnv}()
     local ${keyChunk} = ${masterKey}
     local ${dataStr} = "${hexStream}"
     local len = #${dataStr} / 2
     local ${bufVar} = buffer.create(len)
     
-    -- Referencias locales a funciones nativas (protección contra hooks directos)
+    -- Referencias locales y aislamiento a funciones nativas[cite: 9]
     local ${subFunc} = string.sub
     local ${bxorFunc} = bit32.bxor
+    local ${loadStrFunc} = loadstring
     
-    -- Capa Anti-Tamper: Validación de entorno y funciones base antes de procesar
+    -- Capa Anti-Tamper Blindada: Validación de entorno y detección de hooks en loadstring
     local function ${antiTamperFunc}()
-        if type(buffer) ~= "table" or type(${bxorFunc}) ~= "function" then
+        if type(buffer) ~= "table" or type(${bxorFunc}) ~= "function" or type(${loadStrFunc}) ~= "function" then
             return false
         end
+        
+        -- Detección de alteraciones o reasignaciones en loadstring mediante depuración
+        local info = debug and debug.info
+        if info then
+            local source = info(${loadStrFunc}, "s")
+            -- Si la función ya no apunta al entorno nativo de C ([C]), fue reemplazada por un script
+            if source and source ~= "=[C]" and source ~= "[C]" then
+                return false
+            end
+        end
+        
         return true
     end
     
     if not ${antiTamperFunc}() then
-        error("[ZProtector Elite Security]: Tampering or debugging environment detected.")
+        error("[ZProtector Elite Security]: Tampering, debugging, or core function hook detected.")
     end
     
     local ${stateVar} = ${stateMain}
@@ -91,18 +104,18 @@ local function ${vmEnv}()
                 ${stateVar} = ${stateNext}
             end
         elseif ${stateVar} == ${stateJunk} then
-            -- Estado trampa (Junk State) para romper el análisis estático de descompiladores
+            -- Estado trampa (Junk State) para romper análisis estático[cite: 9]
             local dummyCalc = (${keyChunk} * 37) % 256
             ${stateVar} = ${stateMain}
         elseif ${stateVar} == ${stateNext} then
             ${stateVar} = ${stateExit}
         else
-            -- Fallback de seguridad ante manipulación de la máquina de estados
+            -- Fallback de seguridad ante manipulación[cite: 9]
             ${stateVar} = ${stateJunk}
         end
     end
     
-    local compiledFunc, loadErr = loadstring(buffer.tostring(${bufVar}))
+    local compiledFunc, loadErr = ${loadStrFunc}(buffer.tostring(${bufVar}))
     if not compiledFunc then
         error("[ZProtector Elite Security]: Critical virtualization fault -> " .. tostring(loadErr))
     end
@@ -116,7 +129,7 @@ return ${vmEnv}()`;
             obfuscatedCode: eliteObfuscatedLua 
         });
 
-    } catch (err) {
+    }Ctx => {
         return res.status(500).json({ error: 'Error crítico al procesar la ofuscación de élite.' });
     }
 }
