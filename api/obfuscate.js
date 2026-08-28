@@ -51,8 +51,8 @@ export default async function handler(req, res) {
         const stateJunk = Math.floor(Math.random() * 80000) + 30000;
         const stateExit = 0;
 
-        // 3. Máquina de Estados Avanzada con Anti-Tamper y Bloqueo de Hooks
-        const eliteObfuscatedLua = `-- [ ZProtector v4.4 Elite State-Machine VM + Hardened Anti-Tamper ]
+        // 3. Máquina de Estados Avanzada con Anti-Tamper Corregido y Seguro
+        const eliteObfuscatedLua = `-- [ ZProtector v4.5 Elite State-Machine VM + Hardened Anti-Tamper ]
 local function ${vmEnv}()
     local ${keyChunk} = ${masterKey}
     local ${dataStr} = "${hexStream}"
@@ -64,20 +64,15 @@ local function ${vmEnv}()
     local ${bxorFunc} = bit32.bxor
     local ${loadStrFunc} = loadstring
     
-    -- Capa Anti-Tamper Blindada: Validación de entorno y detección de hooks en loadstring
+    -- Capa Anti-Tamper Optimizada (Evita falsos positivos en ejecutores)
     local function ${antiTamperFunc}()
         if type(buffer) ~= "table" or type(${bxorFunc}) ~= "function" or type(${loadStrFunc}) ~= "function" then
             return false
         end
         
-        -- Detección de alteraciones o reasignaciones en loadstring mediante depuración
-        local info = debug and debug.info
-        if info then
-            local source = info(${loadStrFunc}, "s")
-            -- Si la función ya no apunta al entorno nativo de C ([C]), fue reemplazada por un script
-            if source and source ~= "=[C]" and source ~= "[C]" then
-                return false
-            end
+        -- Validación estricta de la librería debug solicitada
+        if type(debug) ~= "table" or type(debug.info) ~= "function" then
+            return false
         end
         
         return true
