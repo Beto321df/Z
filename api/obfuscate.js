@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-    // Permitir llamados POST desde tu panel web
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -19,37 +18,41 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Convertir el código Lua a un arreglo de bytes con XOR Key (0x5A)
-        const bytes = Array.from(Buffer.from(code, 'utf-8')).map(b => b ^ 0x5A);
-        const byteString = bytes.join(',');
+        // Usar Base64 para empaquetar el código sin romper caracteres especiales ni saltos de línea
+        const encodedCode = Buffer.from(code, 'utf-8').toString('base64');
 
-        // 2. Generar nombres de variables aleatorios estilo Heavy VM
         const randStr = () => "_0x" + Math.random().toString(36).substring(2, 8);
-        const varKey = randStr();
-        const varByte = randStr();
-        const varRes = randStr();
-        const varVM = randStr();
+        const varB64 = randStr();
+        const varDec = randStr();
         const varExec = randStr();
         const varErr = randStr();
 
-        // 3. Estructura de VM Luau blindada contra valores nulos
-        const obfuscatedLua = `-- [ ZProtector B010 Heavy Obfuscator ]
-local ${varKey} = 90
-local ${varByte} = {${byteString}}
-local ${varRes} = {}
-for i = 1, #${varByte} do
-    local b = bit32.bxor(${varByte}[i], ${varKey})
-    local char = string.char(b)
-    if char then
-        table.insert(${varRes}, char)
-    end
+        // Loader limpio compatible con executors de Roblox (Synapse/Kram/Delta/etc.)
+        const obfuscatedLua = `-- [ ZProtector Secure Loader ]
+local ${varB64} = "${encodedCode}"
+local ${varDec} = syn and syn.crypt and syn.crypt.base64.decode(${varB64}) or (crypt and crypt.base64decode and crypt.base64decode(${varB64})) or select(2, pcall(function() return game:GetService("HttpService"):JSONDecode('"'..${varB64}..'"') end)) -- fallback o decodificador nativo
+-- Si tu executor soporta base64 directamente:
+local function b64decode(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if (x == '=') then return '' end
+        local r,f='',(b:find(x)-1)
+        for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
+        return r;
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if (#x ~= 8) then return '' end
+        local c=0
+        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
+        return string.char(c)
+    end))
 end
-local ${varVM} = table.concat(${varRes})
-local ${varExec}, ${varErr} = loadstring(${varVM})
+
+local ${varExec}, ${varErr} = loadstring(b64decode(${varB64}))
 if ${varExec} then
     return ${varExec}()
 else
-    error("[ZProtector Heavy VM Error]: " .. tostring(${varErr}))
+    error("[ZProtector Error]: " .. tostring(${varErr}))
 end`;
 
         return res.status(200).json({ 
