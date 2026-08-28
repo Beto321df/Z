@@ -20,47 +20,48 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Minificar primero usando luamin (aprovechando tu package.json)
+        // 1. Minificar código (si luamin falla por sintaxis avanzada de Luau, usa el código original)
         let processedCode = code;
         try {
             processedCode = luamin.minify(code);
         } catch (e) {
-            processedCode = code; // Si falla el minificado, usa el código original
+            processedCode = code;
         }
 
-        // 2. Capa de compresión / codificación pesada por bloques de bytes con clave dinámica
-        const encodedBytes = [];
+        // 2. Ofuscación XOR comprimida en Cadena Hexadecimal (Ultra ligera en memoria)
         const xorKey = Math.floor(Math.random() * 200) + 20;
-        
+        let hexStream = "";
+
         for (let i = 0; i < processedCode.length; i++) {
-            let charCode = processedCode.charCodeAt(i);
-            let mixed = (charCode + xorKey) % 256;
-            encodedBytes.push(mixed);
+            let byteVal = processedCode.charCodeAt(i) ^ xorKey;
+            hexStream += byteVal.toString(16).padStart(2, '0');
         }
 
         const randName = () => "_0x" + Math.random().toString(36).substring(2, 9);
         const vmEnv = randName();
-        const dataChunk = randName();
+        const dataStr = randName();
         const keyChunk = randName();
-        const pointer = randName();
-        const loopVar = randName();
+        const bufVar = randName();
+        const idxVar = randName();
+        const byteVal = randName();
 
-        // 3. Estructura de VM pesada con auto-decodificación en memoria volátil
-        const heavyObfuscatedLua = `-- [ ZProtector v2.8 Heavy VM - Secure Luau Layer ]
+        // 3. VM con Luau Buffers para ejecución instantánea de miles de líneas
+        const heavyObfuscatedLua = `-- [ ZProtector v3.0 Heavy VM - High Performance Stream Layer ]
 local function ${vmEnv}()
     local ${keyChunk} = ${xorKey}
-    local ${dataChunk} = {${encodedBytes.join(',')}}
-    local ${pointer} = {}
+    local ${dataStr} = "${hexStream}"
+    local len = #${dataStr} / 2
+    local ${bufVar} = buffer.create(len)
     
-    for ${loopVar} = 1, #${dataChunk} do
-        local byteVal = ${dataChunk}[${loopVar}]
-        local original = (byteVal - ${keyChunk}) % 256
-        table.insert(${pointer}, string.char(original))
+    for ${idxVar} = 0, len - 1 do
+        local hexPair = string.sub(${dataStr}, ${idxVar} * 2 + 1, ${idxVar} * 2 + 2)
+        local ${byteVal} = bit32.bxor(tonumber(hexPair, 16), ${keyChunk})
+        buffer.writeu8(${bufVar}, ${idxVar}, ${byteVal})
     end
     
-    local compiledFunc, loadErr = loadstring(table.concat(${pointer}))
+    local compiledFunc, loadErr = loadstring(buffer.tostring(${bufVar}))
     if not compiledFunc then
-        error("[ZProtector Fatal]: Virtual machine integrity check failed.")
+        error("[ZProtector Fatal]: Memory buffer corruption or execution failure.")
     end
     return compiledFunc()
 end
@@ -73,6 +74,6 @@ return ${vmEnv}()`;
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico al procesar la ofuscación pesada.' });
+        return res.status(500).json({ error: 'Error crítico al procesar el script masivo.' });
     }
 }
