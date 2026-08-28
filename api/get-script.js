@@ -6,8 +6,7 @@ export default async function handler(req, res) {
 
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
 
-    // 1. Detección de navegadores web y bots de extracción
-    // (Se quitó el !ua para permitir ejecutores de Roblox que no mandan User-Agent)
+    // 1. Detección de navegadores y bots
     const isBrowser = isSecHeader || accept.includes('text/html');
     const isBot = ua.includes('discord') || ua.includes('python') || 
                   ua.includes('axios') || ua.includes('node') || 
@@ -20,7 +19,7 @@ export default async function handler(req, res) {
     }
 
     if (!id) {
-        return res.status(400).send("-- Error: ID no proporcionado.");
+        return res.status(400).send("-- print('Error: ID no proporcionado.')");
     }
 
     try {
@@ -28,43 +27,57 @@ export default async function handler(req, res) {
         const DB_URL = "https://loaderz1-default-rtdb.firebaseio.com";
         const SECRET = process.env.FIREBASE_SECRET;
 
-        // Petición privada autenticada a Firebase con el secreto
+        // Petición a Firebase
         const fbRes = await fetch(`${DB_URL}/scripts/${cleanId}.json?auth=${SECRET}`);
         const data = await fbRes.json();
 
         if (!data || data.error) {
-            return res.status(404).send("-- Error: Script no encontrado.");
+            return res.status(404).send("-- print('Error: Script no encontrado en Firebase.')");
         }
 
-        // Detectar si el código viene como string directo o como objeto (data.code, data.content, etc.)
+        // Obtener el código Lua del objeto guardado
         const rawCode = typeof data === 'string' ? data : (data.code || data.content || data.script || data);
 
         if (typeof rawCode !== 'string') {
-            return res.status(404).send("-- Error: Formato de script no válido.");
+            return res.status(404).send("-- print('Error: El formato almacenado en Firebase no es válido.')");
         }
 
-        // Codificación Base64
-        const encodedCode = Buffer.from(rawCode).toString('base64');
-        const protectedLuau = `local _b="${encodedCode}"
-local function _d(s)
-    local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-    s=string.gsub(s,'[^'..b..'=]','')
-    return (s:gsub('.',function(x)
-        if(x=='=')then return '' end
-        local r,f='',(b:find(x)-1)
-        for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>=1 and '1' or '0') end
-        return r
-    end):gsub('%d%d%d%d%d%d%d%d',function(x)
-        if(#x~=8)then return '' end
-        local c=0
-        for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
-        return string.char(c)
-    end))
+        // Codificación Base64 limpia en el servidor
+        const encodedCode = Buffer.from(rawCode, 'utf-8').toString('base64');
+
+        // Decodificador Luau seguro
+        const protectedLuau = `local _b = "${encodedCode}"
+local function _d(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    local chars = {}
+    for i = 1, #b do chars[b:sub(i,i)] = i - 1 end
+    data = data:gsub('[^'..b..'=]', '')
+    local out = {}
+    for i = 1, #data, 4 do
+        local c1, c2, c3, c4 = data:sub(i,i), data:sub(i+1,i+1), data:sub(i+2,i+2), data:sub(i+3,i+3)
+        local v1, v2 = chars[c1] or 0, chars[c2] or 0
+        local v3, v4 = chars[c3] or 0, chars[c4] or 0
+        table.insert(out, string.char((v1 * 4) + math.floor(v2 / 16)))
+        if c3 ~= '=' and c3 ~= '' then
+            table.insert(out, string.char(((v2 % 16) * 16) + math.floor(v3 / 4)))
+        end
+        if c4 ~= '=' and c4 ~= '' then
+            table.insert(out, string.char(((v3 % 4) * 64) + v4))
+        end
+    end
+    return table.concat(out)
 end
-loadstring(_d(_b))()`;
+
+local _code = _d(_b)
+local _func, _err = loadstring(_code)
+if _func then
+    _func()
+else
+    warn("[ZProtector Loader Error]: " .. tostring(_err))
+end`;
 
         return res.status(200).send(protectedLuau);
     } catch (err) {
-        return res.status(500).send("-- Error interno del servidor.");
+        return res.status(500).send("-- print('Error interno del servidor.')");
     }
 }
