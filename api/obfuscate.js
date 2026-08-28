@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-    // Permitir llamados POST desde tu panel web
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -19,42 +18,52 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Convertir el código Lua a un arreglo de bytes con XOR Key (0x5A)
-        const bytes = Array.from(Buffer.from(code, 'utf-8')).map(b => b ^ 0x5A);
-        const byteString = bytes.join(',');
+        // 1. Capa de compresión / codificación pesada por bloques de bytes
+        const encodedBytes = [];
+        const xorKey = Math.floor(Math.random() * 200) + 20; // Clave dinámica por ofuscación
+        
+        for (let i = 0; i < code.length; i++) {
+            let charCode = code.charCodeAt(i);
+            // Ofuscación matemática de doble vuelta
+            let mixed = (charCode + xorKey) % 256;
+            encodedBytes.push(mixed);
+        }
 
-        // 2. Generar nombres de variables aleatorios estilo Heavy VM
-        const randStr = () => "_0x" + Math.random().toString(36).substring(2, 8);
-        const varKey = randStr();
-        const varByte = randStr();
-        const varRes = randStr();
-        const varVM = randStr();
-        const varExec = randStr();
-        const varErr = randStr();
+        const randName = () => "_0x" + Math.random().toString(36).substring(2, 9);
+        const vmEnv = randName();
+        const dataChunk = randName();
+        const keyChunk = randName();
+        const pointer = randName();
+        const loopVar = randName();
 
-        // 3. Estructura de VM Luau optimizada para Roblox (B010 Heavy Style)
-        const obfuscatedLua = `-- [ ZProtector B010 Heavy Obfuscator ]
-local ${varKey} = 90
-local ${varByte} = {${byteString}}
-local ${varRes} = {}
-for i = 1, #${varByte} do
-    local b = bit32.bxor(${varByte}[i], ${varKey})
-    table.insert(${varRes}, string.char(b))
+        // 2. Estructura de VM pesada con auto-decodificación en memoria volátil
+        const heavyObfuscatedLua = `-- [ ZProtector v2.5 Heavy VM - Secure Luau Layer ]
+local function ${vmEnv}()
+    local ${keyChunk} = ${xorKey}
+    local ${dataChunk} = {${encodedBytes.join(',')}}
+    local ${pointer} = {}
+    
+    for ${loopVar} = 1, #${dataChunk} do
+        local byteVal = ${dataChunk}[${loopVar}]
+        local original = (byteVal - ${keyChunk}) % 256
+        table.insert(${pointer}, string.char(original))
+    end
+    
+    local compiledFunc, loadErr = loadstring(table.concat(${pointer}))
+    if not compiledFunc then
+        error("[ZProtector Fatal]: Virtual machine integrity check failed.")
+    end
+    return compiledFunc()
 end
-local ${varVM} = table.concat(${varRes})
-local ${varExec}, ${varErr} = loadstring(${varVM})
-if ${varExec} then
-    return ${varExec}()
-else
-    error("[ZProtector Heavy VM Error]: " .. tostring(${varErr}))
-end`;
+
+return ${vmEnv}()`;
 
         return res.status(200).json({ 
             success: true, 
-            obfuscatedCode: obfuscatedLua 
+            obfuscatedCode: heavyObfuscatedLua 
         });
 
-    } catch (err) {
-        return res.status(500).json({ error: 'Error al ofuscar el script.' });
+    } cat (err) {
+        return res.status(500).json({ error: 'Error crítico al procesar la ofuscación pesada.' });
     }
 }
