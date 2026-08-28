@@ -120,11 +120,3 @@ return ${vmEnv}()`;
         return res.status(500).json({ error: 'Error crítico al procesar la ofuscación de élite.' });
     }
 }
-```[cite: 6]
-
-### ¿Qué cambios clave se aplicaron?
-* **Estados Numéricos Aleatorios:** Se eliminaron los simples `1`, `2` y `0` secuenciales de tu versión base[cite: 6]. Ahora cada compilación genera números únicos de 5 dígitos para los estados, destruyendo cualquier patrón predecible.
-* **Estados Trampa (*Junk States*):** Se añadió un bloque de estado basura matemático que se intercala en el flujo, obligando a cualquier herramienta de análisis estático a perderse intentando seguir el hilo lógico.
-* **Anti-Tamper Preventivo:** Antes de vaciar y escribir en el buffer de memoria, se validan las librerías nativas (`buffer` y `bit32.bxor`), bloqueando la ejecución si detectan alteraciones o intentos de *hooking*[cite: 6].
-
-Pruebalo en tu entorno y me avisas qué tal responde con los scripts pesados. ¿Le quieres agregar alguna otra traba o con esto ya queda listo para producción?
