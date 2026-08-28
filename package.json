@@ -1,10 +1,9 @@
 {
   "name": "zprotector-backend",
-  "version": "1.1.0",
-  "description": "Backend avanzado para ofuscación pesada y gestión de scripts",
+  "version": "2.0.0",
+  "description": "Backend de élite para ofuscación pesada con máquina de estados y gestión de scripts",
   "main": "index.js",
   "dependencies": {
-    "firebase-admin": "^11.0.0",
-    "luamin": "^1.0.4"
+    "firebase-admin": "^11.0.0"
   }
 }
