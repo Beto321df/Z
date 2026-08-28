@@ -6,9 +6,10 @@ export default async function handler(req, res) {
 
     res.setHeader('Content-Type', 'text/plain; charset=utf-8');
 
-    // 1. Detección de navegadores y bots de extracción
+    // 1. Detección de navegadores web y bots de extracción
+    // (Se quitó el !ua para permitir ejecutores de Roblox que no mandan User-Agent)
     const isBrowser = isSecHeader || accept.includes('text/html');
-    const isBot = !ua || ua.includes('discord') || ua.includes('python') || 
+    const isBot = ua.includes('discord') || ua.includes('python') || 
                   ua.includes('axios') || ua.includes('node') || 
                   ua.includes('curl') || ua.includes('wget') || 
                   ua.includes('go-http-client') || ua.includes('java') ||
@@ -27,16 +28,23 @@ export default async function handler(req, res) {
         const DB_URL = "https://loaderz1-default-rtdb.firebaseio.com";
         const SECRET = process.env.FIREBASE_SECRET;
 
-        // Petición privada autenticada en el servidor
+        // Petición privada autenticada a Firebase con el secreto
         const fbRes = await fetch(`${DB_URL}/scripts/${cleanId}.json?auth=${SECRET}`);
         const data = await fbRes.json();
 
-        if (!data || !data.code) {
+        if (!data || data.error) {
             return res.status(404).send("-- Error: Script no encontrado.");
         }
 
-        // Codificación de seguridad para evitar lectura simple mediante interceptores HTTP
-        const encodedCode = Buffer.from(data.code).toString('base64');
+        // Detectar si el código viene como string directo o como objeto (data.code, data.content, etc.)
+        const rawCode = typeof data === 'string' ? data : (data.code || data.content || data.script || data);
+
+        if (typeof rawCode !== 'string') {
+            return res.status(404).send("-- Error: Formato de script no válido.");
+        }
+
+        // Codificación Base64
+        const encodedCode = Buffer.from(rawCode).toString('base64');
         const protectedLuau = `local _b="${encodedCode}"
 local function _d(s)
     local b='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
