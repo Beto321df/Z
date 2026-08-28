@@ -29,7 +29,7 @@ export default async function handler(req, res) {
             hexStream += byteVal.toString(16).padStart(2, '0');
         }
 
-        // 2. Generar nombres aleatorios de variables para la VM[cite: 9]
+        // 2. Generar nombres aleatorios de variables para la VM
         const randName = () => "_0x" + Math.random().toString(36).substring(2, 9);
         const vmEnv = randName();
         const dataStr = randName();
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
         const bxorFunc = randName();
         const loadStrFunc = randName();
         
-        // IDs de estados caóticos y aleatorios[cite: 9]
+        // IDs de estados caóticos y aleatorios
         const stateMain = Math.floor(Math.random() * 80000) + 10000;
         const stateNext = Math.floor(Math.random() * 80000) + 20000;
         const stateJunk = Math.floor(Math.random() * 80000) + 30000;
@@ -59,7 +59,7 @@ local function ${vmEnv}()
     local len = #${dataStr} / 2
     local ${bufVar} = buffer.create(len)
     
-    -- Referencias locales y aislamiento a funciones nativas[cite: 9]
+    -- Referencias locales y aislamiento a funciones nativas
     local ${subFunc} = string.sub
     local ${bxorFunc} = bit32.bxor
     local ${loadStrFunc} = loadstring
@@ -104,13 +104,13 @@ local function ${vmEnv}()
                 ${stateVar} = ${stateNext}
             end
         elseif ${stateVar} == ${stateJunk} then
-            -- Estado trampa (Junk State) para romper análisis estático[cite: 9]
+            -- Estado trampa (Junk State) para romper análisis estático
             local dummyCalc = (${keyChunk} * 37) % 256
             ${stateVar} = ${stateMain}
         elseif ${stateVar} == ${stateNext} then
             ${stateVar} = ${stateExit}
         else
-            -- Fallback de seguridad ante manipulación[cite: 9]
+            -- Fallback de seguridad ante manipulación
             ${stateVar} = ${stateJunk}
         end
     end
@@ -129,7 +129,7 @@ return ${vmEnv}()`;
             obfuscatedCode: eliteObfuscatedLua 
         });
 
-    }Ctx => {
+    } catch (err) {
         return res.status(500).json({ error: 'Error crítico al procesar la ofuscación de élite.' });
     }
 }
