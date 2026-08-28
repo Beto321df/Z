@@ -1,5 +1,3 @@
-import luamin from 'luamin';
-
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -20,20 +18,13 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Minificar código (si luamin falla por sintaxis avanzada de Luau, usa el código original)
-        let processedCode = code;
-        try {
-            processedCode = luamin.minify(code);
-        } catch (e) {
-            processedCode = code;
-        }
-
-        // 2. Ofuscación XOR comprimida en Cadena Hexadecimal (Ultra ligera en memoria)
+        // 1. Usar Buffer UTF-8 nativo para leer cada byte respetando acentos, 'ñ' y caracteres especiales
+        const utf8Buffer = Buffer.from(code, 'utf-8');
         const xorKey = Math.floor(Math.random() * 200) + 20;
         let hexStream = "";
 
-        for (let i = 0; i < processedCode.length; i++) {
-            let byteVal = processedCode.charCodeAt(i) ^ xorKey;
+        for (let i = 0; i < utf8Buffer.length; i++) {
+            let byteVal = utf8Buffer[i] ^ xorKey;
             hexStream += byteVal.toString(16).padStart(2, '0');
         }
 
@@ -45,8 +36,8 @@ export default async function handler(req, res) {
         const idxVar = randName();
         const byteVal = randName();
 
-        // 3. VM con Luau Buffers para ejecución instantánea de miles de líneas
-        const heavyObfuscatedLua = `-- [ ZProtector v3.0 Heavy VM - High Performance Stream Layer ]
+        // 2. VM con Luau Buffers (Sin minificador para mantener intactas las tablas de tu UI)
+        const heavyObfuscatedLua = `-- [ ZProtector v3.1 Safe Heavy VM - UI Protected ]
 local function ${vmEnv}()
     local ${keyChunk} = ${xorKey}
     local ${dataStr} = "${hexStream}"
@@ -61,7 +52,7 @@ local function ${vmEnv}()
     
     local compiledFunc, loadErr = loadstring(buffer.tostring(${bufVar}))
     if not compiledFunc then
-        error("[ZProtector Fatal]: Memory buffer corruption or execution failure.")
+        error("[ZProtector Fatal]: " .. tostring(loadErr))
     end
     return compiledFunc()
 end
