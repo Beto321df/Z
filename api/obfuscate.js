@@ -55,8 +55,8 @@ export default async function handler(req, res) {
         const stateJunk = Math.floor(Math.random() * 80000) + 30000;
         const stateExit = 0;
 
-        // 3. Máquina de Estados Avanzada con Anti-Tamper de Nivel Industrial (v5.0)
-        const eliteObfuscatedLua = `-- [ ZProtector v5.0 Elite State-Machine VM + Military Anti-Tamper ]
+        // 3. Máquina de Estados Avanzada con Anti-Tamper Corregido (v5.1)
+        const eliteObfuscatedLua = `-- [ ZProtector v5.1 Elite State-Machine VM + Military Anti-Tamper ]
 local function ${vmEnv}()
     local ${keyChunk} = ${masterKey}
     local ${dataStr} = "${hexStream}"
@@ -101,12 +101,12 @@ local function ${vmEnv}()
 
     -- Ejecución de barreras defensivas previas
     if not ${envCheckFunc}() or not ${timeCheckFunc}() or not ${stackCheckFunc}() then
-        error("[ZProtector Elite Security v5.0]: Sandbox, breakpoint, or debugging environment violation detected.")
+        error("[ZProtector Elite Security v5.1]: Sandbox, breakpoint, or debugging environment violation detected.")
     end
 
-    -- CAPA 4: Trampas con Metatables (Protege el almacenamiento interno contra escaneos maliciosos)
+    -- CAPA 4: Trampas con Metatables corregidas (Protege el almacenamiento interno)
     local ${metaTableVar} = {
-        [_0x"key"] = ${keyChunk}
+        ["key"] = ${keyChunk}
     }
     setmetatable(${metaTableVar}, {
         __index = function(t, k)
@@ -125,8 +125,8 @@ local function ${vmEnv}()
             if ${idxVar} < len then
                 local hexPair = ${subFunc}(${dataStr}, ${idxVar} * 2 + 1, ${idxVar} * 2 + 2)
                 local rawVal = tonumber(hexPair, 16)
-                -- Extracción segura utilizando la llave aislada
-                local rollingKey = (${keyChunk} + (${idxVar} % 7)) % 256
+                -- Extracción segura utilizando la llave aislada de la metatable
+                local rollingKey = (${metaTableVar}["key"] + (${idxVar} % 7)) % 256
                 local ${byteVal} = ${bxorFunc}(rawVal, rollingKey)
                 buffer.writeu8(${bufVar}, ${idxVar}, ${byteVal})
                 ${idxVar} = ${idxVar} + 1
@@ -136,7 +136,7 @@ local function ${vmEnv}()
             end
         elseif ${stateVar} == ${stateJunk} then
             -- Estado trampa (Junk State) con operaciones basura para confundir al descompilador
-            local dummyCalc = (${keyChunk} * 37) % 256
+            local dummyCalc = (${metaTableVar}["key"] * 37) % 256
             ${stateVar} = ${stateMain}
         elseif ${stateVar} == ${stateNext} then
             ${stateVar} = ${stateExit}
