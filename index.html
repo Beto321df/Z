@@ -484,6 +484,11 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        @keyframes zspin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -669,6 +674,13 @@
 
             <button id="btn-back-success" type="button" class="btn" style="margin-top: 25px;"><i class="fa-solid fa-house"></i> Volver al Inicio</button>
         </div>
+    </div>
+
+    <!-- MODAL DE CARGA ZPROTECTOR B010 -->
+    <div id="obfuscateModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(10,10,12,0.92); z-index:99999; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:sans-serif;">
+        <div style="border: 4px solid #1e1e24; border-top: 4px solid #ef4444; border-radius: 50%; width: 55px; height: 55px; animation: zspin 0.8s linear infinite;"></div>
+        <h3 style="margin-top:22px; font-size: 20px; letter-spacing: 1px;">🔒 Ofuscando Script con ZProtector B010...</h3>
+        <p style="color:#888; font-size: 14px; margin-top:5px;">Aplicando Heavy VM, cifrado de variables y tabla XOR...</p>
     </div>
 
     <script>
@@ -1128,7 +1140,7 @@
                     });
             }
 
-            function guardarScript() {
+            async function guardarScript() {
                 const id = document.getElementById('script-id').value.trim();
                 const code = document.getElementById('script-code').value;
 
@@ -1149,18 +1161,37 @@
                     return;
                 }
 
-                fetch('/api/scripts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user: currentUser,
-                        id: cleanId,
-                        code: code,
-                        isUpdate: false
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
+                const modal = document.getElementById('obfuscateModal');
+                modal.style.display = 'flex';
+
+                try {
+                    const obfRes = await fetch('/api/obfuscate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: code })
+                    });
+                    const obfData = await obfRes.json();
+
+                    if (!obfData.success) {
+                        mostrarAlerta('msg-alert', '<i class="fa-solid fa-circle-xmark"></i> Error al ofuscar el script.', 'error');
+                        modal.style.display = 'none';
+                        return;
+                    }
+
+                    const codigoOfuscado = obfData.obfuscatedCode;
+
+                    const res = await fetch('/api/scripts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user: currentUser,
+                            id: cleanId,
+                            code: codigoOfuscado,
+                            isUpdate: false
+                        })
+                    });
+                    const data = await res.json();
+
                     if (data.ok) {
                         const loadUrl = `loadstring(game:HttpGet("https://zprotector.vercel.app/api/get-script?id=${cleanId}"))()`;
                         const outBox = document.getElementById('out-loadstring');
@@ -1174,13 +1205,14 @@
                     } else {
                         mostrarAlerta('msg-alert', `<i class="fa-solid fa-ban"></i> ${data.msg}`, 'error');
                     }
-                })
-                .catch(() => {
-                    mostrarAlerta('msg-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Error al conectar con el servidor.', 'error');
-                });
+                } catch (err) {
+                    mostrarAlerta('msg-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Error de servidor en el proceso.', 'error');
+                } finally {
+                    modal.style.display = 'none';
+                }
             }
 
-            function actualizarScript() {
+            async function actualizarScript() {
                 const code = document.getElementById('edit-script-code').value;
                 if (!code.trim()) {
                     mostrarAlerta('edit-alert', '<i class="fa-solid fa-triangle-exclamation"></i> El código no puede estar vacío.', 'error');
@@ -1193,28 +1225,48 @@
                     return;
                 }
 
-                fetch('/api/scripts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user: currentUser,
-                        id: editScriptId,
-                        code: code,
-                        isUpdate: true
-                    })
-                })
-                .then(res => res.json())
-                .then(data => {
+                const modal = document.getElementById('obfuscateModal');
+                modal.style.display = 'flex';
+
+                try {
+                    const obfRes = await fetch('/api/obfuscate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code: code })
+                    });
+                    const obfData = await obfRes.json();
+
+                    if (!obfData.success) {
+                        mostrarAlerta('edit-alert', '<i class="fa-solid fa-circle-xmark"></i> Error al ofuscar el script.', 'error');
+                        modal.style.display = 'none';
+                        return;
+                    }
+
+                    const codigoOfuscado = obfData.obfuscatedCode;
+
+                    const res = await fetch('/api/scripts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user: currentUser,
+                            id: editScriptId,
+                            code: codigoOfuscado,
+                            isUpdate: true
+                        })
+                    });
+                    const data = await res.json();
+
                     if (data.ok) {
-                        alert('¡Script actualizado correctamente!');
+                        alert('¡Script actualizado y ofuscado correctamente!');
                         cambiarVista('dashboard');
                     } else {
                         mostrarAlerta('edit-alert', `<i class="fa-solid fa-triangle-exclamation"></i> ${data.msg}`, 'error');
                     }
-                })
-                .catch(() => {
+                } catch (err) {
                     mostrarAlerta('edit-alert', '<i class="fa-solid fa-triangle-exclamation"></i> Error al actualizar script.', 'error');
-                });
+                } finally {
+                    modal.style.display = 'none';
+                }
             }
 
             function eliminarScript() {
