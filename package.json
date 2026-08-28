@@ -1,9 +1,12 @@
 {
   "name": "zprotector-backend",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Backend de élite para ofuscación pesada con máquina de estados y gestión de scripts",
   "main": "index.js",
   "dependencies": {
     "firebase-admin": "^11.0.0"
   }
 }
+```[cite: 8]
+
+¿Todo bien con la subida del backend o te echo la mano con algo más?
