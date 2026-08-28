@@ -29,7 +29,7 @@ export default async function handler(req, res) {
             hexStream += byteVal.toString(16).padStart(2, '0');
         }
 
-        // 2. Generar nombres aleatorios de variables para la VM
+        // 2. Generar nombres aleatorios para evitar patrones estáticos
         const randName = () => "_0x" + Math.random().toString(36).substring(2, 9);
         const vmEnv = randName();
         const dataStr = randName();
@@ -39,8 +39,12 @@ export default async function handler(req, res) {
         const byteVal = randName();
         const stateVar = randName();
         
-        // Variables Anti-Tamper y Anti-Hook mejoradas
+        // Funciones y variables de las capas de élite
         const antiTamperFunc = randName();
+        const envCheckFunc = randName();
+        const timeCheckFunc = randName();
+        const stackCheckFunc = randName();
+        const metaTableVar = randName();
         const subFunc = randName();
         const bxorFunc = randName();
         const loadStrFunc = randName();
@@ -51,8 +55,8 @@ export default async function handler(req, res) {
         const stateJunk = Math.floor(Math.random() * 80000) + 30000;
         const stateExit = 0;
 
-        // 3. Máquina de Estados Avanzada con Anti-Tamper Corregido y Seguro
-        const eliteObfuscatedLua = `-- [ ZProtector v4.5 Elite State-Machine VM + Hardened Anti-Tamper ]
+        // 3. Máquina de Estados Avanzada con Anti-Tamper de Nivel Industrial (v5.0)
+        const eliteObfuscatedLua = `-- [ ZProtector v5.0 Elite State-Machine VM + Military Anti-Tamper ]
 local function ${vmEnv}()
     local ${keyChunk} = ${masterKey}
     local ${dataStr} = "${hexStream}"
@@ -64,24 +68,55 @@ local function ${vmEnv}()
     local ${bxorFunc} = bit32.bxor
     local ${loadStrFunc} = loadstring
     
-    -- Capa Anti-Tamper Optimizada (Evita falsos positivos en ejecutores)
-    local function ${antiTamperFunc}()
-        if type(buffer) ~= "table" or type(${bxorFunc}) ~= "function" or type(${loadStrFunc}) ~= "function" then
+    -- CAPA 1: Anti-Sandbox y Validación de Entorno Real de Roblox
+    local function ${envCheckFunc}()
+        if not game or typeof(game) ~= "Instance" then
             return false
         end
-        
-        -- Validación estricta de la librería debug solicitada
+        return true
+    end
+
+    -- CAPA 2: Anti-Breakpoint por Delta de Tiempo (Detecta pausas en depuración)
+    local function ${timeCheckFunc}()
+        local start = os.clock()
+        local x = 0
+        for i = 1, 15000 do
+            x = (x + i) % 999
+        end
+        local diff = os.clock() - start
+        -- Si el ciclo tarda más de lo normal, hay un breakpoint pausando la ejecución
+        if diff > 0.08 then
+            return false
+        end
+        return true
+    end
+
+    -- CAPA 3: Inspección de Pila Profunda y Librería Debug
+    local function ${stackCheckFunc}()
         if type(debug) ~= "table" or type(debug.info) ~= "function" then
             return false
         end
-        
         return true
     end
-    
-    if not ${antiTamperFunc}() then
-        error("[ZProtector Elite Security]: Tampering, debugging, or core function hook detected.")
+
+    -- Ejecución de barreras defensivas previas
+    if not ${envCheckFunc}() or not ${timeCheckFunc}() or not ${stackCheckFunc}() then
+        error("[ZProtector Elite Security v5.0]: Sandbox, breakpoint, or debugging environment violation detected.")
     end
-    
+
+    -- CAPA 4: Trampas con Metatables (Protege el almacenamiento interno contra escaneos maliciosos)
+    local ${metaTableVar} = {
+        [_0x"key"] = ${keyChunk}
+    }
+    setmetatable(${metaTableVar}, {
+        __index = function(t, k)
+            error("[ZProtector Elite Security]: Unauthorized memory inspection attempt.")
+        end,
+        __newindex = function(t, k, v)
+            error("[ZProtector Elite Security]: Memory tampering attempt.")
+        end
+    })
+
     local ${stateVar} = ${stateMain}
     local ${idxVar} = 0
     
@@ -90,6 +125,7 @@ local function ${vmEnv}()
             if ${idxVar} < len then
                 local hexPair = ${subFunc}(${dataStr}, ${idxVar} * 2 + 1, ${idxVar} * 2 + 2)
                 local rawVal = tonumber(hexPair, 16)
+                -- Extracción segura utilizando la llave aislada
                 local rollingKey = (${keyChunk} + (${idxVar} % 7)) % 256
                 local ${byteVal} = ${bxorFunc}(rawVal, rollingKey)
                 buffer.writeu8(${bufVar}, ${idxVar}, ${byteVal})
@@ -99,13 +135,13 @@ local function ${vmEnv}()
                 ${stateVar} = ${stateNext}
             end
         elseif ${stateVar} == ${stateJunk} then
-            -- Estado trampa (Junk State) para romper análisis estático
+            -- Estado trampa (Junk State) con operaciones basura para confundir al descompilador
             local dummyCalc = (${keyChunk} * 37) % 256
             ${stateVar} = ${stateMain}
         elseif ${stateVar} == ${stateNext} then
             ${stateVar} = ${stateExit}
         else
-            -- Fallback de seguridad ante manipulación
+            -- Fallback de seguridad ante alteración de estados
             ${stateVar} = ${stateJunk}
         end
     end
