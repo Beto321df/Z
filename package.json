@@ -8,6 +8,3 @@
     "firebase-admin": "^11.0.0"
   }
 }
-```[cite: 8]
-
-Sube ese cambio a tu repositorio de GitHub y Vercel va a reintentar el despliegue en automático. ¡Pruebalo y me avisas si ya pasa el check!
