@@ -1,5 +1,4 @@
 export default async function handler(req, res) {
-    // Permitir llamados POST desde tu panel web
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -19,15 +18,14 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Usar Buffer UTF-8 nativo de Node.js para respetar acentos, 'ñ' y caracteres especiales
+        // 1. Usar Buffer UTF-8 con llave rodante por posición (Matemáticamente exacto y seguro)
         const utf8Buffer = Buffer.from(code, 'utf-8');
-        const masterKey = Math.floor(Math.random() * 180) + 40;
+        const masterKey = Math.floor(Math.random() * 150) + 50;
         let hexStream = "";
 
         for (let i = 0; i < utf8Buffer.length; i++) {
-            // Doble operación matemática rotativa para dificultar el análisis estático
-            let byteVal = (utf8Buffer[i] ^ masterKey) + (i % 5);
-            byteVal = byteVal % 256;
+            const rollingKey = (masterKey + (i % 7)) % 256;
+            const byteVal = utf8Buffer[i] ^ rollingKey;
             hexStream += byteVal.toString(16).padStart(2, '0');
         }
 
@@ -41,8 +39,8 @@ export default async function handler(req, res) {
         const byteVal = randName();
         const stateVar = randName();
 
-        // 3. Estructura de Máquina de Estados + Luau Buffers (Protegido y ultra rápido)
-        const eliteObfuscatedLua = `-- [ ZProtector v4.1 Elite State-Machine VM ]
+        // 3. Máquina de Estados con Luau Buffers y Rolling XOR
+        const eliteObfuscatedLua = `-- [ ZProtector v4.2 Elite State-Machine VM ]
 local function ${vmEnv}()
     local ${keyChunk} = ${masterKey}
     local ${dataStr} = "${hexStream}"
@@ -57,8 +55,8 @@ local function ${vmEnv}()
             if ${idxVar} < len then
                 local hexPair = string.sub(${dataStr}, ${idxVar} * 2 + 1, ${idxVar} * 2 + 2)
                 local rawVal = tonumber(hexPair, 16)
-                local unmixed = (rawVal - (${idxVar} % 256)) % 256
-                local ${byteVal} = bit32.bxor(unmixed, ${keyChunk})
+                local rollingKey = (${keyChunk} + (${idxVar} % 7)) % 256
+                local ${byteVal} = bit32.bxor(rawVal, rollingKey)
                 buffer.writeu8(${bufVar}, ${idxVar}, ${byteVal})
                 ${idxVar} = ${idxVar} + 1
             else
