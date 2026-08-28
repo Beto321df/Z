@@ -1,6 +1,6 @@
 {
   "name": "zprotector-backend",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Backend de élite para ofuscación pesada con máquina de estados y gestión de scripts",
   "main": "index.js",
   "dependencies": {
