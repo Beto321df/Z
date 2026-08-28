@@ -32,13 +32,13 @@ export default async function handler(req, res) {
         const varExec = randStr();
         const varErr = randStr();
 
-        // 3. Estructura de VM Luau ilegible (B010 Heavy Style)
+        // 3. Estructura de VM Luau optimizada para Roblox (B010 Heavy Style)
         const obfuscatedLua = `-- [ ZProtector B010 Heavy Obfuscator ]
 local ${varKey} = 90
 local ${varByte} = {${byteString}}
 local ${varRes} = {}
 for i = 1, #${varByte} do
-    local b = bit32 and bit32.bxor(${varByte}[i], ${varKey}) or (${varByte}[i] ~ ${varKey})
+    local b = bit32.bxor(${varByte}[i], ${varKey})
     table.insert(${varRes}, string.char(b))
 end
 local ${varVM} = table.concat(${varRes})
