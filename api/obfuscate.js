@@ -18,19 +18,21 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Usar Buffer UTF-8 con llave rodante por posición
+        // 1. Cifrado binario pesado de doble pasada con llave rodante y rotación
         const utf8Buffer = Buffer.from(code, 'utf-8');
-        const masterKey = Math.floor(Math.random() * 150) + 50;
+        const masterKey = Math.floor(Math.random() * 200) + 30;
         let hexStream = "";
 
         for (let i = 0; i < utf8Buffer.length; i++) {
-            const rollingKey = (masterKey + (i % 7)) % 256;
+            const rollingKey = (masterKey + (i * 13) % 251) % 256;
             const byteVal = utf8Buffer[i] ^ rollingKey;
-            hexStream += byteVal.toString(16).padStart(2, '0');
+            // Doble mezcla de bits para ocultar el patrón hexadecimal puro
+            const mixedByte = ((byteVal << 4) | (byteVal >> 4)) & 0xFF;
+            hexStream += mixedByte.toString(16).padStart(2, '0');
         }
 
-        // 2. Generar nombres aleatorios para evitar patrones estáticos
-        const randName = () => "_0x" + Math.random().toString(36).substring(2, 9);
+        // 2. Generador de nombres altamente ofuscados y caóticos
+        const randName = () => "_0x" + Math.random().toString(36).substring(2, 10);
         const vmEnv = randName();
         const dataStr = randName();
         const keyChunk = randName();
@@ -39,8 +41,7 @@ export default async function handler(req, res) {
         const byteVal = randName();
         const stateVar = randName();
         
-        // Funciones y variables de las capas de élite
-        const antiTamperFunc = randName();
+        // Referencias a funciones de seguridad y aislamiento
         const envCheckFunc = randName();
         const timeCheckFunc = randName();
         const stackCheckFunc = randName();
@@ -49,63 +50,58 @@ export default async function handler(req, res) {
         const bxorFunc = randName();
         const loadStrFunc = randName();
         
-        // IDs de estados caóticos y aleatorios
-        const stateMain = Math.floor(Math.random() * 80000) + 10000;
-        const stateNext = Math.floor(Math.random() * 80000) + 20000;
-        const stateJunk = Math.floor(Math.random() * 80000) + 30000;
-        const stateExit = 0;
+        // Estados dinámicos iniciales altamente complejos
+        const baseSeed = Math.floor(Math.random() * 50000) + 15000;
 
-        // 3. Máquina de Estados Avanzada con Anti-Tamper Corregido (v5.1) y Banner Z Protector
+        // 3. Script Final de Élite con Máquina de Estados Caótica y Anti-Tamper Extremo
         const eliteObfuscatedLua = `--[[
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
-║     ███████╗ ██████╗ ██████╗ ████████╗██████╗  ██████╗████████╗ ██████╗ ██████╗  ║
-║     ╚══██╔╝ ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗██╔═══██║╚══██╔══╝██╔═══██╗██╔══██╗ ║
-║        ██╔╝  ██████╔╝██████╔╝   ██║   ██████╔╝██║   ██║   ██║   ██║   ██║██████╔╝ ║
-║       ██╔╝   ██╔═══╝ ██╔══██╗   ██║   ██╔══██╗██║   ██║   ██║   ██║   ██║██╔══██╗ ║
-║      ███████╗██║     ██║  ██║   ██║   ██║  ██║╚██████╔╝   ██║   ╚██████╔╝██║  ██║ ║
-║      ╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═╝ ║
+║      ███████╗ ██████╗ ██████╗ ████████╗██████╗  ██████╗████████╗ ██████╗ ██████╗   ║
+║      ╚══██╔╝ ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗██╔═══██║╚══██╔══╝██╔═══██╗██╔══██╗  ║
+║         ██╔╝  ██████╔╝██████╔╝   ██║   ██████╔╝██║   ██║   ██║   ██║   ██║██████╔╝  ║
+║        ██╔╝   ██╔═══╝ ██╔══██╗   ██║   ██╔══██╗██║   ██║   ██║   ██║   ██║██╔══██╗  ║
+║       ███████╗██║     ██║  ██║   ██║   ██║  ██║╚██████╔╝   ██║   ╚██████╔╝██║  ██║  ║
+║       ╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═╝  ║
 ║                                                                              ║
-║     Z PROTECTOR  │  discord.gg/wCrVjBtpt                                     ║
+║      Z PROTECTOR  │  discord.gg/wCrVjBtpt                                    ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ]]
--- [ ZProtector v5.1 Elite State-Machine VM + Military Anti-Tamper ]
+-- [ ZProtector Elite v5.2 - Military Grade Control-Flow Virtualization ]
 local function ${vmEnv}()
     local ${keyChunk} = ${masterKey}
     local ${dataStr} = "${hexStream}"
     local len = #${dataStr} / 2
     local ${bufVar} = buffer.create(len)
     
-    -- Referencias locales y aislamiento a funciones nativas
+    -- Aislamiento estricto de funciones nativas críticas del motor
     local ${subFunc} = string.sub
     local ${bxorFunc} = bit32.bxor
     local ${loadStrFunc} = loadstring
     
-    -- CAPA 1: Anti-Sandbox y Validación de Entorno Real de Roblox
+    -- CAPA 1: Validación rigurosa de entorno Roblox (Anti-Sandbox / Anti-Fake Environment)
     local function ${envCheckFunc}()
-        if not game or typeof(game) ~= "Instance" then
+        if not game or typeof(game) ~= "Instance" or not getgenv then
             return false
         end
         return true
     end
 
-    -- CAPA 2: Anti-Breakpoint por Delta de Tiempo (Detecta pausas en depuración)
+    -- CAPA 2: Anti-Breakpoint por Delta de Tiempo Avanzado
     local function ${timeCheckFunc}()
         local start = os.clock()
         local x = 0
-        for i = 1, 15000 do
-            x = (x + i) % 999
+        for i = 1, 25000 do
+            x = (x + i * 3) % 10007
         end
-        local diff = os.clock() - start
-        -- Si el ciclo tarda más de lo normal, hay un breakpoint pausando la ejecución
-        if diff > 0.08 then
+        if (os.clock() - start) > 0.12 then
             return false
         end
         return true
     end
 
-    -- CAPA 3: Inspección de Pila Profunda y Librería Debug
+    -- CAPA 3: Auditoría de Pila y Librería Debug
     local function ${stackCheckFunc}()
         if type(debug) ~= "table" or type(debug.info) ~= "function" then
             return false
@@ -113,56 +109,51 @@ local function ${vmEnv}()
         return true
     end
 
-    -- Ejecución de barreras defensivas previas
     if not ${envCheckFunc}() or not ${timeCheckFunc}() or not ${stackCheckFunc}() then
-        error("[ZProtector Elite Security v5.1]: Sandbox, breakpoint, or debugging environment violation detected.")
+        error("[ZProtector Elite Security]: Runtime environment violation or debugger hook detected.")
     end
 
-    -- CAPA 4: Trampas con Metatables corregidas (Protege el almacenamiento interno)
-    local ${metaTableVar} = {
-        ["key"] = ${keyChunk}
-    }
+    -- CAPA 4: Metatable Candado contra Inspección de Memoria y Volcado de Variables
+    local ${metaTableVar} = { ["k"] = ${keyChunk} }
     setmetatable(${metaTableVar}, {
-        __index = function(t, k)
-            error("[ZProtector Elite Security]: Unauthorized memory inspection attempt.")
-        end,
-        __newindex = function(t, k, v)
-            error("[ZProtector Elite Security]: Memory tampering attempt.")
-        end
+        __index = function() error("[ZProtector]: Memory read violation.") end,
+        __newindex = function() error("[ZProtector]: Memory write violation.") end
     })
 
-    local ${stateVar} = ${stateMain}
+    local ${stateVar} = ${baseSeed}
     local ${idxVar} = 0
-    
-    while ${stateVar} ~= ${stateExit} do
-        if ${stateVar} == ${stateMain} then
+
+    -- Máquina de estados caótica y no lineal (Anti-Decompiladores AST)
+    while ${stateVar} ~= 0 do
+        if ${stateVar} == ${baseSeed} then
             if ${idxVar} < len then
                 local hexPair = ${subFunc}(${dataStr}, ${idxVar} * 2 + 1, ${idxVar} * 2 + 2)
                 local rawVal = tonumber(hexPair, 16)
-                -- Extracción segura utilizando la llave aislada de la metatable
-                local rollingKey = (${metaTableVar}["key"] + (${idxVar} % 7)) % 256
-                local ${byteVal} = ${bxorFunc}(rawVal, rollingKey)
+                -- Reversión de la doble capa de bits
+                local unmixed = ((rawVal >> 4) | (rawVal << 4)) & 0xFF
+                local rollingKey = (${metaTableVar}["k"] + (${idxVar} * 13) % 251) % 256
+                local ${byteVal} = ${bxorFunc}(unmixed, rollingKey)
                 buffer.writeu8(${bufVar}, ${idxVar}, ${byteVal})
                 ${idxVar} = ${idxVar} + 1
-                ${stateVar} = ${stateMain}
+                -- Transición de estado con operaciones matemáticas opacas
+                ${stateVar} = (${baseSeed} * 3 + 17) % 99991
             else
-                ${stateVar} = ${stateNext}
+                ${stateVar} = 0 -- Salida limpia
             end
-        elseif ${stateVar} == ${stateJunk} then
-            -- Estado trampa (Junk State) con operaciones basura para confundir al descompilador
-            local dummyCalc = (${metaTableVar}["key"] * 37) % 256
-            ${stateVar} = ${stateMain}
-        elseif ${stateVar} == ${stateNext} then
-            ${stateVar} = ${stateExit}
+        elseif ${stateVar} == (( ${baseSeed} * 3 + 17 ) % 99991) then
+            -- Estado trampa señuelo para confundir herramientas de análisis estático
+            local junk = (${metaTableVar}["k"] * 43) % 256
+            ${stateVar} = ${baseSeed}
         else
-            -- Fallback de seguridad ante alteración de estados
-            ${stateVar} = ${stateJunk}
+            -- Autodestrucción de flujo si detecta alteraciones en los estados
+            ${stateVar} = 0
+            error("[ZProtector]: Critical control flow corruption.")
         end
     end
-    
+
     local compiledFunc, loadErr = ${loadStrFunc}(buffer.tostring(${bufVar}))
     if not compiledFunc then
-        error("[ZProtector Elite Security]: Critical virtualization fault -> " .. tostring(loadErr))
+        error("[ZProtector]: Bytecode compilation fault -> " .. tostring(loadErr))
     end
     return compiledFunc()
 end
@@ -175,6 +166,6 @@ return ${vmEnv}()`;
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico al procesar la ofuscación de élite.' });
+        return res.status(500).json({ error: 'Error crítico en el motor de ofuscación ZProtector.' });
     }
 }
