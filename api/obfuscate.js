@@ -55,8 +55,22 @@ export default async function handler(req, res) {
         const stateJunk = Math.floor(Math.random() * 80000) + 30000;
         const stateExit = 0;
 
-        // 3. Máquina de Estados Avanzada con Anti-Tamper Corregido (v5.1)
-        const eliteObfuscatedLua = `-- [ ZProtector v5.1 Elite State-Machine VM + Military Anti-Tamper ]
+        // 3. Máquina de Estados Avanzada con Anti-Tamper Corregido (v5.1) y Banner Z Protector
+        const eliteObfuscatedLua = `--[[
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║     ███████╗ ██████╗ ██████╗ ████████╗██████╗  ██████╗████████╗ ██████╗ ██████╗  ║
+║     ╚══██╔╝ ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗██╔═══██║╚══██╔══╝██╔═══██╗██╔══██╗ ║
+║        ██╔╝  ██████╔╝██████╔╝   ██║   ██████╔╝██║   ██║   ██║   ██║   ██║██████╔╝ ║
+║       ██╔╝   ██╔═══╝ ██╔══██╗   ██║   ██╔══██╗██║   ██║   ██║   ██║   ██║██╔══██╗ ║
+║      ███████╗██║     ██║  ██║   ██║   ██║  ██║╚██████╔╝   ██║   ╚██████╔╝██║  ██║ ║
+║      ╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═╝ ║
+║                                                                              ║
+║     Z PROTECTOR  │  discord.gg/wCrVjBtpt                                     ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+]]
+-- [ ZProtector v5.1 Elite State-Machine VM + Military Anti-Tamper ]
 local function ${vmEnv}()
     local ${keyChunk} = ${masterKey}
     local ${dataStr} = "${hexStream}"
