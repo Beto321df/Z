@@ -27,8 +27,8 @@ export default async function handler(req, res) {
         }
 
         // ====================================================================
-        // Z-PROTECTOR V15.2: TRUE CHAOS-NOISE ENGINE (OPTIMIZADO & SIN CORTES)
-        // Mantiene el glitch visual intacto pero fragmentado para cero lag y cero cortes.
+        // Z-PROTECTOR V15.3: TRUE CHAOS-NOISE ENGINE (DELIMITADORES SEGUROS)
+        // Mantiene el glitch visual exacto pero blinda el gmatch contra conflictos.
         // ====================================================================
 
         const r = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
@@ -36,7 +36,8 @@ export default async function handler(req, res) {
         const k2 = Math.floor(Math.random() * 150) + 20;
 
         const utf8Buffer = Buffer.from(code, 'utf-8');
-        const chaosChars = "abcdefghijklmnopqrstuvwxyz0123456789/[]-=;.,?*#@_+";
+        // Quitamos '=', '[' y ']' del ruido para que los delimitadores del gmatch sean 100% seguros y únicos
+        const chaosChars = "abcdefghijklmnopqrstuvwxyz0123456789/.;.,?*#@_+";
         
         let chunks = [];
         let currentChunk = "";
@@ -56,7 +57,6 @@ export default async function handler(req, res) {
 
             currentChunk += "/" + noise1 + "=" + finalB + "]" + noise2 + "/";
 
-            // Fragmentar inteligentemente para evitar saturar el parser y eliminar el lag
             if (currentChunk.length > 800 || i === utf8Buffer.length - 1) {
                 chunks.push(`"${currentChunk}"`);
                 currentChunk = "";
@@ -71,7 +71,6 @@ export default async function handler(req, res) {
         const varFn = r();
         const varErr = r();
 
-        // Estructura optimizada que procesa por fragmentos manteniendo el caos visual exacto
         const payload = `local ${varData}={${chunks.join(",")}};local ${varKey1}=${k1};local ${varKey2}=${k2};if not game then error()end;local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch("=([0-9]+)%]") do t[#t+1]=tonumber(n)end;end;local ${varBuf}=buffer.create(#t);for i=1,#t do local v=t[i];local idx=i-1;local u=bit32.bxor(v,(${varKey1}+(idx*3))%256);buffer.writeu8(${varBuf},idx,bit32.bxor(u,bit32.band(${varKey2},15)));end;
 local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Chaos]: "..tostring(${varErr})) end;return ${varFn}();`;
 
@@ -81,6 +80,6 @@ local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor V15.2: ' + err.message });
+        return res.status(500).json({ error: 'Error crítico en el motor V15.3: ' + err.message });
     }
 }
