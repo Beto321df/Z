@@ -1,7 +1,7 @@
 export const config = {
     api: {
         bodyParser: {
-            sizeLimit: '4mb', // Soporta scripts masivos de hasta 3,000+ líneas sin tirar Error 500
+            sizeLimit: '4mb',
         },
     },
 };
@@ -26,21 +26,21 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Cifrado binario en chunks optimizado en memoria O(N)
+        // 1. Cifrado binario pesado optimizado en memoria O(N)
         const utf8Buffer = Buffer.from(code, 'utf-8');
-        const masterKey = Math.floor(Math.random() * 190) + 35;
+        const masterKey = Math.floor(Math.random() * 200) + 30;
         const hexChunks = new Array(utf8Buffer.length);
 
         for (let i = 0; i < utf8Buffer.length; i++) {
-            const rollingKey = (masterKey + (i * 19) % 251) % 256;
+            const rollingKey = (masterKey + (i * 23) % 251) % 256;
             const byteVal = utf8Buffer[i] ^ rollingKey;
             const mixedByte = ((byteVal >>> 4) | (byteVal << 4)) & 0xFF;
             hexChunks[i] = mixedByte.toString(16).padStart(2, '0');
         }
         const hexStream = hexChunks.join('');
 
-        // 2. Generador de identificadores aleatorios de alta entropía
-        const randName = () => "_0x" + Math.random().toString(36).substring(2, 9);
+        // 2. Generador masivo de identificadores caóticos y extraños
+        const randName = () => "_0x" + Math.random().toString(36).substring(2, 10);
         
         const vmEnv = randName();
         const dataStr = randName();
@@ -50,23 +50,31 @@ export default async function handler(req, res) {
         const byteVal = randName();
         const stateVar = randName();
         
-        const checkEnv = randName();
-        const checkHooks = randName();
-        const checkTiming = randName();
-        const cleanupVar = randName();
-
         const subFunc = randName();
         const bxorFunc = randName();
         const bandFunc = randName();
         const loadFunc = randName();
+        const clockFunc = randName();
+        const lenVar = randName();
+        const hexPairVar = randName();
+        const rawByteVar = randName();
+        const unmixedVar = randName();
+        const currentKeyVar = randName();
+        const cleanupVar = randName();
+        const compiledVar = randName();
+        const errVar = randName();
+        const checkEnv = randName();
+        const dummyTable = randName();
 
-        const stateInit = Math.floor(Math.random() * 80000) + 10000;
-        const stateProcess = Math.floor(Math.random() * 80000) + 20000;
-        const stateTrap = Math.floor(Math.random() * 80000) + 30000;
+        // Estados dinámicos matemáticos aleatorios para que cada ofuscación luzzca única y rara
+        const baseSeed = Math.floor(Math.random() * 50000) + 15000;
+        const stateInit = baseSeed + 1337;
+        const stateProcess = baseSeed + 8842;
+        const stateTrap = baseSeed + 19992;
         const stateDone = 0;
 
-        // 3. Stub blindado con anti-dumping, anti-hooks y banner visual corregido
-        const titaniumObfuscatedLua = `--[[
+        // 3. Stub ultra-ofuscado, denso y 100% compatible con ejecutores
+        const chaoticObfuscatedLua = `--[[
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
 ║   ███████╗    ██████╗ ██████╗  ██████╗ ████████╗██████╗  ██████╗ ████████╗   ║
@@ -86,103 +94,79 @@ local function ${vmEnv}()
     local ${bxorFunc} = bit32.bxor
     local ${bandFunc} = bit32.band
     local ${loadFunc} = loadstring
-    local clock = os.clock
+    local ${clockFunc} = os.clock
 
-    -- Detección de Hooks / Anti-Extraction
-    local function ${checkHooks}()
-        local isHooked = false
-        pcall(function()
-            if tostring(${loadFunc}):find("custom") or tostring(${subFunc}):find("hook") then
-                isHooked = true
-            end
-            if type(hookfunction) == "function" or type(isourclosure) == "function" then
-                if isourclosure(${loadFunc}) or isourclosure(${subFunc}) then 
-                    isHooked = true 
-                end
-            end
-        end)
-        return not isHooked
-    end
-
-    -- Anti-Breakpoint / Timing Verification
-    local function ${checkTiming}()
-        local tStart = clock()
-        local acc = 0
-        for i = 1, 30000 do acc = (acc + i * 7) % 65535 end
-        if (clock() - tStart) > 0.10 then return false end
+    local function ${checkEnv}()
+        if not game or typeof(game) ~= "Instance" then return false end
         return true
     end
 
-    -- Sandbox Integrity
-    local function ${checkEnv}()
-        if not game or typeof(game) ~= "Instance" then return false end
-        local isOk, _ = pcall(function() return game:GetService("CoreGui") end)
-        return isOk
-    end
-
-    if not ${checkEnv}() or not ${checkHooks}() or not ${checkTiming}() then
-        error("[ZProtector]: Security integrity violation.")
+    if not ${checkEnv}() then
+        error("[ZProtector]: Sandbox violation.")
     end
 
     local ${dataStr} = "${hexStream}"
     local ${keyVal} = ${masterKey}
-    local totalLen = #${dataStr} / 2
-    local ${bufVar} = buffer.create(totalLen)
+    local ${lenVar} = #${dataStr} / 2
+    local ${bufVar} = buffer.create(${lenVar})
 
     local ${stateVar} = ${stateInit}
     local ${idxVar} = 0
 
     while ${stateVar} ~= ${stateDone} do
         if ${stateVar} == ${stateInit} then
-            if ${idxVar} < totalLen then
+            if ${idxVar} < ${lenVar} then
                 ${stateVar} = ${stateProcess}
             else
                 ${stateVar} = ${stateDone}
             end
         elseif ${stateVar} == ${stateProcess} then
-            local hexPair = ${subFunc}(${dataStr}, ${idxVar} * 2 + 1, ${idxVar} * 2 + 2)
-            local rawByte = tonumber(hexPair, 16)
-            if not rawByte then error("[ZProtector]: Decryption fault.") end
+            local ${hexPairVar} = ${subFunc}(${dataStr}, ${idxVar} * 2 + 1, ${idxVar} * 2 + 2)
+            local ${rawByteVar} = tonumber(${hexPairVar}, 16)
+            if not ${rawByteVar} then error("[ZProtector]: Decryption fault.") end
 
-            local unmixed = ${bandFunc}(bit32.bor(bit32.rshift(rawByte, 4), bit32.lshift(rawByte, 4)), 255)
-            local currentKey = (${keyVal} + (${idxVar} * 19) % 251) % 256
-            local ${byteVal} = ${bxorFunc}(unmixed, currentKey)
+            local ${unmixedVar} = ${bandFunc}(bit32.bor(bit32.rshift(${rawByteVar}, 4), bit32.lshift(${rawByteVar}, 4)), 255)
+            local ${currentKeyVar} = (${keyVal} + (${idxVar} * 23) % 251) % 256
+            local ${byteVal} = ${bxorFunc}(${unmixedVar}, ${currentKeyVar})
 
             buffer.writeu8(${bufVar}, ${idxVar}, ${byteVal})
             ${idxVar} = ${idxVar} + 1
 
-            if ${idxVar} % 16 == 0 and ${idxVar} < totalLen then
+            if ${idxVar} % 16 == 0 and ${idxVar} < ${lenVar} then
                 ${stateVar} = ${stateTrap}
             else
                 ${stateVar} = ${stateInit}
             end
         elseif ${stateVar} == ${stateTrap} then
-            if ${idxVar} < 0 then ${stateVar} = ${stateDone} else ${stateVar} = ${stateInit} end
+            if ${idxVar} < 0 then 
+                ${stateVar} = ${stateDone} 
+            else 
+                ${stateVar} = ${stateInit} 
+            end
         else
             error("[ZProtector]: Flow integrity check failed.")
         end
     end
 
-    -- Anti-Dump Memory Wipe (Limpia los datos binarios antes de pasar a la memoria de ejecución)
     local ${cleanupVar} = buffer.tostring(${bufVar})
     ${dataStr} = nil
     ${bufVar} = nil
 
-    local compiledScript, loadErr = ${loadFunc}(${cleanupVar})
+    local ${compiledVar}, ${errVar} = ${loadFunc}(${cleanupVar})
     ${cleanupVar} = nil
 
-    if not compiledScript or type(compiledScript) ~= "function" then
-        error("[ZProtector]: Execution error -> " .. tostring(loadErr))
+    if not ${compiledVar} or type(${compiledVar}) ~= "function" then
+        error("[ZProtector]: Execution error -> " .. tostring(${errVar}))
     end
 
-    return compiledScript()
+    return ${compiledVar}()
 end
 
 return ${vmEnv}()`;
 
         return res.status(200).json({ 
             success: true, 
-            obfuscatedCode: titaniumObfuscatedLua 
+            obfuscatedCode: chaoticObfuscatedLua 
         });
 
     } catch (err) {
