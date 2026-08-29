@@ -1,8 +1,6 @@
 export const config = {
     api: {
-        bodyParser: {
-            sizeLimit: '4mb',
-        },
+        bodyParser: { sizeLimit: '4mb' },
     },
 };
 
@@ -11,158 +9,94 @@ export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-    if (req.method === 'OPTIONS') {
-        return res.status(200).end();
-    }
-
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Método no permitido' });
-    }
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
 
     try {
         const { code } = req.body;
-
         if (!code || typeof code !== 'string') {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Cifrado binario pesado optimizado en memoria O(N)
+        // 1. Cifrado Binario Mutante (Más pesado que el original)
         const utf8Buffer = Buffer.from(code, 'utf-8');
         const masterKey = Math.floor(Math.random() * 200) + 30;
         const hexChunks = new Array(utf8Buffer.length);
 
         for (let i = 0; i < utf8Buffer.length; i++) {
-            const rollingKey = (masterKey + (i * 23) % 251) % 256;
+            const rollingKey = (masterKey + (i * 17) % 251) % 256;
             const byteVal = utf8Buffer[i] ^ rollingKey;
-            const mixedByte = ((byteVal >>> 4) | (byteVal << 4)) & 0xFF;
+            const mixedByte = ((byteVal >>> 3) | (byteVal << 5)) & 0xFF; // Rotación de bits alterada
             hexChunks[i] = mixedByte.toString(16).padStart(2, '0');
         }
         const hexStream = hexChunks.join('');
 
-        // 2. Generador masivo de identificadores caóticos y extraños
-        const randName = () => "_0x" + Math.random().toString(36).substring(2, 10);
+        // 2. Generador de nombres polimórficos
+        const randName = () => "_Z" + Math.random().toString(36).substring(2, 12);
         
-        const vmEnv = randName();
+        const envFunc = randName();
         const dataStr = randName();
-        const keyVal = randName();
         const bufVar = randName();
-        const idxVar = randName();
-        const byteVal = randName();
-        const stateVar = randName();
-        
-        const subFunc = randName();
-        const bxorFunc = randName();
-        const bandFunc = randName();
-        const loadFunc = randName();
-        const clockFunc = randName();
-        const lenVar = randName();
-        const hexPairVar = randName();
-        const rawByteVar = randName();
-        const unmixedVar = randName();
-        const currentKeyVar = randName();
-        const cleanupVar = randName();
-        const compiledVar = randName();
-        const errVar = randName();
-        const checkEnv = randName();
-        const dummyTable = randName();
+        const hookCheck = randName();
+        const decoyVar = randName();
+        const crashVar = randName();
+        const realLoad = randName();
 
-        // Estados dinámicos matemáticos aleatorios para que cada ofuscación luzzca única y rara
-        const baseSeed = Math.floor(Math.random() * 50000) + 15000;
-        const stateInit = baseSeed + 1337;
-        const stateProcess = baseSeed + 8842;
-        const stateTrap = baseSeed + 19992;
-        const stateDone = 0;
-
-        // 3. Stub ultra-ofuscado, denso y 100% compatible con ejecutores
-        const chaoticObfuscatedLua = `--[[
-╔══════════════════════════════════════════════════════════════════════════════╗
-║                                                                              ║
-║   ███████╗    ██████╗ ██████╗  ██████╗ ████████╗██████╗  ██████╗ ████████╗   ║
-║   ╚══███╔╝    ██╔══██╗██╔══██╗██╔═══██╗╚══██╔══╝██╔══██╗██╔═══██╗██╔═══██╗   ║
-║     ███╔╝     ██████╔╝██████╔╝██║   ██║   ██║   ██████╔╝██║   ██║██████╔╝    ║
-║    ███╔╝      ██╔═══╝ ██╔══██╗██║   ██║   ██║   ██╔══██╗██║   ██║██╔══██╗    ║
-║   ███████╗    ██║     ██║  ██║╚██████╔╝   ██║   ██║  ██║╚██████╔╝██║  ██║    ║
-║   ╚══════╝    ╚═╝     ╚═╝  ╚═╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝    ║
-║                                                                              ║
-║               Z PROTECTOR  │  discord.gg/wCrVjBtpt                           ║
-║                                                                              ║
-╚══════════════════════════════════════════════════════════════════════════════╝
-]]
-
-local function ${vmEnv}()
-    local ${subFunc} = string.sub
-    local ${bxorFunc} = bit32.bxor
-    local ${bandFunc} = bit32.band
-    local ${loadFunc} = loadstring
-    local ${clockFunc} = os.clock
-
-    local function ${checkEnv}()
-        if not game or typeof(game) ~= "Instance" then return false end
-        return true
+        // 3. Stub Lua con Anti-Tamper Militar Inyectado
+        const chaoticObfuscatedLua = `--[[ Z PROTECTOR ELITE | ANTI-DUMP V2 ]]
+local function ${envFunc}()
+    local ${realLoad} = getgenv and getgenv().loadstring or loadstring
+    local ${hookCheck} = false
+    
+    -- [1] TRAMPA ANTI-HOOK (Detecta si están espiando el loadstring)
+    if iscclosure and iscclosure(${realLoad}) then ${hookCheck} = true end
+    if hookfunction then 
+        local s, e = pcall(function() hookfunction(${realLoad}, function() end) end)
+        if s then ${hookCheck} = true end
     end
 
-    if not ${checkEnv}() then
-        error("[ZProtector]: Sandbox violation.")
-    end
+    -- [2] EL SEÑUELO (Manda basura al dumper para engañarlo)
+    local ${decoyVar} = "print('ZProtector: Intento de dump bloqueado. Te la pelaste perro.')"
+    pcall(function() ${realLoad}(${decoyVar})() end)
 
-    local ${dataStr} = "${hexStream}"
-    local ${keyVal} = ${masterKey}
-    local ${lenVar} = #${dataStr} / 2
-    local ${bufVar} = buffer.create(${lenVar})
-
-    local ${stateVar} = ${stateInit}
-    local ${idxVar} = 0
-
-    while ${stateVar} ~= ${stateDone} do
-        if ${stateVar} == ${stateInit} then
-            if ${idxVar} < ${lenVar} then
-                ${stateVar} = ${stateProcess}
-            else
-                ${stateVar} = ${stateDone}
-            end
-        elseif ${stateVar} == ${stateProcess} then
-            local ${hexPairVar} = ${subFunc}(${dataStr}, ${idxVar} * 2 + 1, ${idxVar} * 2 + 2)
-            local ${rawByteVar} = tonumber(${hexPairVar}, 16)
-            if not ${rawByteVar} then error("[ZProtector]: Decryption fault.") end
-
-            local ${unmixedVar} = ${bandFunc}(bit32.bor(bit32.rshift(${rawByteVar}, 4), bit32.lshift(${rawByteVar}, 4)), 255)
-            local ${currentKeyVar} = (${keyVal} + (${idxVar} * 23) % 251) % 256
-            local ${byteVal} = ${bxorFunc}(${unmixedVar}, ${currentKeyVar})
-
-            buffer.writeu8(${bufVar}, ${idxVar}, ${byteVal})
-            ${idxVar} = ${idxVar} + 1
-
-            if ${idxVar} % 16 == 0 and ${idxVar} < ${lenVar} then
-                ${stateVar} = ${stateTrap}
-            else
-                ${stateVar} = ${stateInit}
-            end
-        elseif ${stateVar} == ${stateTrap} then
-            if ${idxVar} < 0 then 
-                ${stateVar} = ${stateDone} 
-            else 
-                ${stateVar} = ${stateInit} 
-            end
-        else
-            error("[ZProtector]: Flow integrity check failed.")
+    -- [3] BOMBA DE MEMORIA (Si detecta dumper, crashea el juego del wey)
+    if ${hookCheck} then
+        while true do
+            print("Crasheando...")
+            string.rep("Z", 9999999) -- Revienta la RAM del ejecutor
         end
     end
 
-    local ${cleanupVar} = buffer.tostring(${bufVar})
-    ${dataStr} = nil
-    ${bufVar} = nil
+    -- [4] DESCIFRADO LEGÍTIMO (Solo si el entorno está limpio)
+    local ${dataStr} = "${hexStream}"
+    local ${bufVar} = buffer.create(#${dataStr} / 2)
+    local mk = ${masterKey}
+    local idx = 0
 
-    local ${compiledVar}, ${errVar} = ${loadFunc}(${cleanupVar})
-    ${cleanupVar} = nil
-
-    if not ${compiledVar} or type(${compiledVar}) ~= "function" then
-        error("[ZProtector]: Execution error -> " .. tostring(${errVar}))
+    for i = 1, #${dataStr}, 2 do
+        local hex = string.sub(${dataStr}, i, i + 1)
+        local rawByte = tonumber(hex, 16)
+        
+        -- Revertir rotación de bits (>> 5 y << 3)
+        local unmixed = bit32.band(bit32.bor(bit32.lshift(rawByte, 3), bit32.rshift(rawByte, 5)), 255)
+        local currentKey = (mk + (idx * 17) % 251) % 256
+        local realByte = bit32.bxor(unmixed, currentKey)
+        
+        buffer.writeu8(${bufVar}, idx, realByte)
+        idx = idx + 1
     end
 
-    return ${compiledVar}()
+    local finalCode = buffer.tostring(${bufVar})
+    ${dataStr} = nil -- Limpiar memoria
+    ${bufVar} = nil
+    
+    local exec, err = ${realLoad}(finalCode)
+    if not exec then return end
+    
+    return exec()
 end
 
-return ${vmEnv}()`;
+return ${envFunc}()`;
 
         return res.status(200).json({ 
             success: true, 
@@ -170,6 +104,6 @@ return ${vmEnv}()`;
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error en el motor ZProtector: ' + err.message });
+        return res.status(500).json({ error: 'Error crítico en ZProtector: ' + err.message });
     }
 }
