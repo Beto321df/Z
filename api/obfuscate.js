@@ -27,36 +27,45 @@ export default async function handler(req, res) {
         }
 
         // ====================================================================
-        // Z-PROTECTOR V14: CHAOS-MATRIX ENGINE (ESTILO GLITCH / MÁXIMO CAOS)
-        // Mezcla de escapes decimales con ruido visual estilo matriz y buffers.
+        // Z-PROTECTOR V15: TRUE CHAOS-NOISE ENGINE (GLITCH EXTREMO)
+        // Mezcla bytes reales con ruido visual de slashes, corchetes, letras y números.
         // ====================================================================
 
-        // Generador de nombres con símbolos caóticos estilo Matrix
-        const chaosId = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
-        
+        const r = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
         const k1 = Math.floor(Math.random() * 180) + 40;
         const k2 = Math.floor(Math.random() * 150) + 20;
 
         const utf8Buffer = Buffer.from(code, 'utf-8');
-        let packedStream = '';
+        const chaosChars = "abcdefghijklmnopqrstuvwxyz0123456789\\/[]-=;.,?*#@_+";
+        let chaoticStream = "";
+
         for (let i = 0; i < utf8Buffer.length; i++) {
             const b = utf8Buffer[i];
             const b1 = b ^ (k2 & 15);
             const b2 = (k1 + (i * 3)) % 256;
             const finalB = b1 ^ b2;
-            packedStream += '\\' + finalB.toString().padStart(3, '0');
+
+            // Generar ruido visual aleatorio con diagonales, letras y corchetes
+            let noise1 = "", noise2 = "";
+            const len1 = Math.floor(Math.random() * 3) + 2;
+            const len2 = Math.floor(Math.random() * 3) + 2;
+            
+            for (let j = 0; j < len1; j++) noise1 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
+            for (let j = 0; j < len2; j++) noise2 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
+
+            // Inyectar el byte camuflado en medio del caos visual
+            chaoticStream += "/" + noise1 + "=" + finalB + "]" + noise2 + "/";
         }
 
-        const varData = chaosId();
-        const varKey1 = chaosId();
-        const varKey2 = chaosId();
-        const varBuf = chaosId();
-        const varFn = chaosId();
-        const varErr = chaosId();
-        const decoyChaos = `/* /1212/=-1204/]\\d;fdd,/12dfsd/df.wc/?wf 912912121/]s[[desad]/2-0012' */`;
+        const varData = r();
+        const varKey1 = r();
+        const varKey2 = r();
+        const varBuf = r();
+        const varFn = r();
+        const varErr = r();
 
-        // Estructura de 2 líneas con caos visual extremo y velocidad instantánea
-        const payload = `${decoyChaos}local ${varData}="${packedStream}";local ${varKey1}=${k1};local ${varKey2}=${k2};if not game then error()end;local ${varBuf}=buffer.fromstring(${varData});for i=0,buffer.len(${varBuf})-1 do local v=buffer.readu8(${varBuf},i);local u=bit32.bxor(v,(${varKey1}+(i*3))%256);buffer.writeu8(${varBuf},i,bit32.bxor(u,bit32.band(${varKey2},15)));end;
+        // Estructura de 2 líneas con caos visual extremo y decodificación ultra rápida por buffer
+        const payload = `local ${varData}="${chaoticStream}";local ${varKey1}=${k1};local ${varKey2}=${k2};if not game then error()end;local t={};for n in ${varData}:gmatch("=([0-9]+)%]") do t[#t+1]=tonumber(n)end;local ${varBuf}=buffer.create(#t);for i=1,#t do local v=t[i];local idx=i-1;local u=bit32.bxor(v,(${varKey1}+(idx*3))%256);buffer.writeu8(${varBuf},idx,bit32.bxor(u,bit32.band(${varKey2},15)));end;
 local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Chaos]: "..tostring(${varErr})) end;return ${varFn}();`;
 
         return res.status(200).json({ 
@@ -65,6 +74,6 @@ local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor V14: ' + err.message });
+        return res.status(500).json({ error: 'Error crítico en el motor V15: ' + err.message });
     }
 }
