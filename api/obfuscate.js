@@ -1,3 +1,11 @@
+export const config = {
+    api: {
+        bodyParser: {
+            sizeLimit: '4mb', // Ampliamos el límite para soportar scripts gigantes de más de 3,000 líneas
+        },
+    },
+};
+
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -18,7 +26,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // 1. Cifrado optimizado con array chunks para evitar saturación en scripts grandes
+        // 1. Cifrado optimizado con array chunks para evitar saturación en scripts masivos
         const utf8Buffer = Buffer.from(code, 'utf-8');
         const masterKey = Math.floor(Math.random() * 180) + 40;
         const hexChunks = new Array(utf8Buffer.length);
@@ -61,7 +69,7 @@ export default async function handler(req, res) {
         const stateVerify = Math.floor(Math.random() * 90000) + 50000;
         const stateExit = 0;
 
-        // 3. Ensamblaje del Stub Masivo de Élite
+        // 3. Ensamblaje del Stub Masivo de Élite con sintaxis 100% nativa de Luau
         const titaniumObfuscatedLua = `--[[
 ╔══════════════════════════════════════════════════════════════════════════════╗
 ║                                                                              ║
@@ -72,7 +80,7 @@ export default async function handler(req, res) {
 ║       ███████╗██║     ██║  ██║   ██║   ██║  ██║╚██████╔╝   ██║   ╚██████╔╝██║  ██║  ║
 ║       ╚══════╝╚═╝     ╚═╝  ╚═╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝    ╚═╝    ╚═════╝ ╚═╝  ╚═╝  ║
 ║                                                                              ║
-║      Z PROTECTOR TITANIUM EDITION v6.1 │ discord.gg/wCrVjBtpt                ║
+║      Z PROTECTOR TITANIUM EDITION v6.2 │ discord.gg/wCrVjBtpt                ║
 ║                                                                              ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 ]]
@@ -98,7 +106,7 @@ local function ${vmEnv}()
         local tStart = clock()
         local acc = 0
         for i = 1, 20000 do acc = (acc + i * 3) % 104729 end
-        if (clock() - tStart) > 0.12 then return false end
+        if (clock() - tStart) > 0.15 then return false end
         return true
     end
 
@@ -156,10 +164,18 @@ local function ${vmEnv}()
             if ${idxVar} % 4 == 0 then ${stateVar} = ${stateJunk1} else ${stateVar} = ${stateInit} end
         elseif ${stateVar} == ${stateJunk1} then
             local dummy = ${junkProxyA}(${metaTableVar}.key)
-            ${stateVar} = dummy > 1000 ? ${stateJunk2} : ${stateInit}
+            if dummy > 1000 then
+                ${stateVar} = ${stateJunk2}
+            else
+                ${stateVar} = ${stateInit}
+            end
         elseif ${stateVar} == ${stateJunk2} then
             local dummyLen = ${junkProxyB}(${dataStr})
-            ${stateVar} = dummyLen < 0 ? ${stateExit} : ${stateInit}
+            if dummyLen < 0 then
+                ${stateVar} = ${stateExit}
+            else
+                ${stateVar} = ${stateInit}
+            end
         elseif ${stateVar} == ${stateVerify} then
             if ${idxVar} == len then ${stateVar} = ${stateExit} else ${stateVar} = ${stateInit} end
         else
@@ -182,6 +198,7 @@ return ${vmEnv}()`;
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor Titanium.' });
+        // Ahora el servidor devuelve exactamente el error real para depurarlo al instante
+        return res.status(500).json({ error: 'Error en el motor Titanium: ' + err.message });
     }
 }
