@@ -27,12 +27,13 @@ export default async function handler(req, res) {
         }
 
         // ====================================================================
-        // Z-PROTECTOR V13: ULTRA-FAST BUFFER ESCAPE ENGINE
-        // Mantiene tu formato \020\221 favorito pero usa buffers nativos de Luau
-        // para descifrar al instante (Adiós al congelamiento de 30 segundos).
+        // Z-PROTECTOR V14: CHAOS-MATRIX ENGINE (ESTILO GLITCH / MÁXIMO CAOS)
+        // Mezcla de escapes decimales con ruido visual estilo matriz y buffers.
         // ====================================================================
 
-        const r = () => "_Z_" + Math.random().toString(36).substring(2, 8);
+        // Generador de nombres con símbolos caóticos estilo Matrix
+        const chaosId = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
+        
         const k1 = Math.floor(Math.random() * 180) + 40;
         const k2 = Math.floor(Math.random() * 150) + 20;
 
@@ -46,16 +47,17 @@ export default async function handler(req, res) {
             packedStream += '\\' + finalB.toString().padStart(3, '0');
         }
 
-        const varData = r();
-        const varKey1 = r();
-        const varKey2 = r();
-        const varBuf = r();
-        const varFn = r();
-        const varErr = r();
+        const varData = chaosId();
+        const varKey1 = chaosId();
+        const varKey2 = chaosId();
+        const varBuf = chaosId();
+        const varFn = chaosId();
+        const varErr = chaosId();
+        const decoyChaos = `/* /1212/=-1204/]\\d;fdd,/12dfsd/df.wc/?wf 912912121/]s[[desad]/2-0012' */`;
 
-        // Estructura de 2 líneas optimizada con buffer nativo para ejecución instantánea (< 1ms)
-        const payload = `local ${varData}="${packedStream}";local ${varKey1}=${k1};local ${varKey2}=${k2};if not game then error()end;local ${varBuf}=buffer.fromstring(${varData});for i=0,buffer.len(${varBuf})-1 do local v=buffer.readu8(${varBuf},i);local u=bit32.bxor(v,(${varKey1}+(i*3))%256);buffer.writeu8(${varBuf},i,bit32.bxor(u,bit32.band(${varKey2},15)));end;
-local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Error]: "..tostring(${varErr})) end;return ${varFn}();`;
+        // Estructura de 2 líneas con caos visual extremo y velocidad instantánea
+        const payload = `${decoyChaos}local ${varData}="${packedStream}";local ${varKey1}=${k1};local ${varKey2}=${k2};if not game then error()end;local ${varBuf}=buffer.fromstring(${varData});for i=0,buffer.len(${varBuf})-1 do local v=buffer.readu8(${varBuf},i);local u=bit32.bxor(v,(${varKey1}+(i*3))%256);buffer.writeu8(${varBuf},i,bit32.bxor(u,bit32.band(${varKey2},15)));end;
+local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Chaos]: "..tostring(${varErr})) end;return ${varFn}();`;
 
         return res.status(200).json({ 
             success: true, 
@@ -63,6 +65,6 @@ local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor V13: ' + err.message });
+        return res.status(500).json({ error: 'Error crítico en el motor V14: ' + err.message });
     }
 }
