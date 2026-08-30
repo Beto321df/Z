@@ -61,7 +61,7 @@ export default async function handler(req, res) {
         const tagClose = "))_." ;
         const offsetMath = Math.floor(Math.random() * 30) + 10;
 
-        // 4. Inyección de Ruido Limpia (Sin espacios que rompan tonumber en hex)
+        // 4. Inyección de Ruido con Símbolos
         const chaosChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,./;'[]\\=-+_/*-!@#$%^&*()";
 
         let chunks = [];
@@ -71,10 +71,8 @@ export default async function handler(req, res) {
             const rawByte = encryptedBytes[idx];
             const obfuscatedValue = rawByte + offsetMath;
 
-            // Formato sin espacios internos para evitar que tonumber() devuelva nil en Luau
-            const formattedVal = (Math.random() > 0.6) 
-                ? "0x" + obfuscatedValue.toString(16) 
-                : String(obfuscatedValue);
+            // Usar siempre números decimales puros para compatibilidad total con tonumber() en Luau
+            const formattedVal = String(obfuscatedValue);
 
             let noise1 = "", noise2 = "";
             const len1 = Math.floor(Math.random() * 5) + 3;
@@ -98,6 +96,7 @@ export default async function handler(req, res) {
         const varData = r(), varKey = r(), varS = r(), varId = r();
         const varBuf = r(), varFn = r(), varErr = r(), varI = r(), varJ = r();
         const varLoad = r(), varCheck = r(), varPattern = r(), varOffset = r();
+        const varSuccess = r(), varRes = r();
 
         // Escapar caracteres especiales de Luau usando %$&
         const escapeLuaPattern = (str) => str.replace(/[\%\.\(\)\[\]\^\$\*\+\-\?]/g, '%$&');
@@ -105,11 +104,11 @@ export default async function handler(req, res) {
         const regexTagOpen = escapeLuaPattern(tagOpen);
         const regexTagClose = escapeLuaPattern(tagClose);
         
-        // Patrón limpio para capturar al fanumérico exacto entre delimitadores
-        const luauRegex = `${regexTagOpen}(%%w+)${regexTagClose}`;
+        // Patrón con dígitos (%d+) 100% compatible con tonumber() en Luau
+        const luauRegex = `${regexTagOpen}(%%d+)${regexTagClose}`;
 
-        // 6. Payload Final Blindado
-        const payload = `local ${varCheck}=getgenv or function() return _G end;if not game then error() end;local ${varLoad}=${varCheck}().loadstring or loadstring;local ${varOffset}=${offsetMath};local ${varPattern}="${luauRegex}";local ${varData}={${chunks.join(",")}};local ${varKey}={${keyBytes.join(",")}};local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch(${varPattern}) do t[#t+1]=(tonumber(n) or 0)-${varOffset} end end;local ${varS}={};for i=0,255 do ${varS}[i]=i end;local ${varJ}=0;for i=0,255 do ${varJ}=(${varJ}+${varS}[i]+${varKey}[(i%#${varKey})+1])%256;${varS}[i],${varS}[${varJ}]=${varS}[${varJ}],${varS}[i] end;local ${varBuf}=buffer.create(#t);local ${varI},${varJ}=0,0;for idx=0,#t-1 do ${varI}=(${varI}+1)%256;${varJ}=(${varJ}+${varS}[${varI}])%256;${varS}[${varI}],${varS}[${varJ}]=${varS}[${varJ}],${varS}[${varI}];buffer.writeu8(${varBuf},idx,bit32.bxor(t[idx+1],${varS}[(${varS}[${varI}]+${varS}[${varJ}])%256]));end;local ${varFn},${varErr}=${varLoad}(buffer.tostring(${varBuf}));if not ${varFn} then error("[Z-Chaos Engine]: "..tostring(${varErr})) end;return ${varFn}();`;
+        // 6. Payload Final con Manejo de Errores Visible en Consola
+        const payload = `local ${varCheck}=getgenv or function() return _G end;if not game then error() end;local ${varLoad}=${varCheck}().loadstring or loadstring;local ${varOffset}=${offsetMath};local ${varPattern}="${luauRegex}";local ${varData}={${chunks.join(",")}};local ${varKey}={${keyBytes.join(",")}};local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch(${varPattern}) do t[#t+1]=(tonumber(n) or 0)-${varOffset} end end;local ${varS}={};for i=0,255 do ${varS}[i]=i end;local ${varJ}=0;for i=0,255 do ${varJ}=(${varJ}+${varS}[i]+${varKey}[(i%#${varKey})+1])%256;${varS}[i],${varS}[${varJ}]=${varS}[${varJ}],${varS}[i] end;local ${varBuf}=buffer.create(#t);local ${varI},${varJ}=0,0;for idx=0,#t-1 do ${varI}=(${varI}+1)%256;${varJ}=(${varJ}+${varS}[${varI}])%256;${varS}[${varI}],${varS}[${varJ}]=${varS}[${varJ}],${varS}[${varI}];buffer.writeu8(${varBuf},idx,bit32.bxor(t[idx+1],${varS}[(${varS}[${varI}]+${varS}[${varJ}])%256]));end;local ${varFn},${varErr}=${varLoad}(buffer.tostring(${varBuf}));if not ${varFn} then warn("[Z-Chaos Engine Syntax Error]: "..tostring(${varErr})) return end;local ${varSuccess},${varRes}=pcall(${varFn});if not ${varSuccess} then warn("[Z-Chaos Engine Runtime Error]: "..tostring(${varRes})) end;return ${varRes};`;
 
         return res.status(200).json({
             success: true,
@@ -117,6 +116,6 @@ export default async function handler(req, res) {
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error en el motor Z-Protector V19.2: ' + err.message });
+        return res.status(500).json({ error: 'Error en el motor Z-Protector V19.3: ' + err.message });
     }
 }
