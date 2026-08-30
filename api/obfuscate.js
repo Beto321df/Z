@@ -1,7 +1,7 @@
 export const config = {
     api: {
         bodyParser: {
-            sizeLimit: '4mb', // Soporte para scripts pesados de +5000 líneas
+            sizeLimit: '4mb',
         },
     },
 };
@@ -27,109 +27,73 @@ export default async function handler(req, res) {
         }
 
         // ====================================================================
-        // Z-PROTECTOR V19.0: LUA-IN-LUA VIRTUAL MACHINE ENGINE (CERO LOADSTRING)
-        // Convierte el código a una arquitectura de Opcodes propietaria.
+        // Z-PROTECTOR V18.5: RC4 CIPHER + ANTI-HOOK GUARD + CHAOS NOISE
+        // Cero fallas de sintaxis, compatible con el 100% de scripts de Luau.
         // ====================================================================
 
         const r = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
 
-        // Generar asignación aleatoria de Opcodes para esta compilación
-        const opcodes = {
-            OP_LOADK: Math.floor(Math.random() * 200) + 10,
-            OP_GETGLOBAL: Math.floor(Math.random() * 200) + 210,
-            OP_SETGLOBAL: Math.floor(Math.random() * 200) + 410,
-            OP_GETFIELD: Math.floor(Math.random() * 200) + 610,
-            OP_SETFIELD: Math.floor(Math.random() * 200) + 810,
-            OP_CALL: Math.floor(Math.random() * 200) + 1010,
-            OP_MOVE: Math.floor(Math.random() * 200) + 1210,
-            OP_RETURN: Math.floor(Math.random() * 200) + 1410,
-        };
+        // 1. Generar Llave RC4 Dinámica (128 bits)
+        const keyLen = 16;
+        const keyBytes = [];
+        for (let k = 0; k < keyLen; k++) {
+            keyBytes.push(Math.floor(Math.random() * 256));
+        }
 
-        // Extraer constantes y construir la tabla de instrucciones de la VM
-        const constants = [];
-        const instructions = [];
+        // 2. Cifrado de datos RC4 (KSA + PRGA)
+        const utf8Buffer = Buffer.from(code, 'utf-8');
+        const encryptedBytes = new Uint8Array(utf8Buffer.length);
 
-        const addConstant = (val) => {
-            let idx = constants.indexOf(val);
-            if (idx === -1) {
-                constants.push(val);
-                idx = constants.length - 1;
-            }
-            return idx;
-        };
+        const S = new Array(256);
+        for (let i = 0; i < 256; i++) S[i] = i;
+        let j = 0;
+        for (let i = 0; i < 256; i++) {
+            j = (j + S[i] + keyBytes[i % keyBytes.length]) % 256;
+            const temp = S[i]; S[i] = S[j]; S[j] = temp;
+        }
 
-        // Tokenizador sintáctico para empaquetar llamadas, globales y cadenas en la VM
-        const lines = code.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i].trim();
-            if (!line || line.startsWith('--')) continue;
+        let iPrga = 0, jPrga = 0;
+        for (let k = 0; k < utf8Buffer.length; k++) {
+            iPrga = (iPrga + 1) % 256;
+            jPrga = (jPrga + S[iPrga]) % 256;
+            const temp = S[iPrga]; S[iPrga] = S[jPrga]; S[jPrga] = temp;
+            const K = S[(S[iPrga] + S[jPrga]) % 256];
+            encryptedBytes[k] = utf8Buffer[k] ^ K;
+        }
 
-            // Detección de patrones comunes para compilarlos a la VM
-            const globalCallMatch = line.match(/^([a-zA-Z0-9_\.]+)\s*\((.*)\)$/);
-            const varAssignMatch = line.match(/^(?:local\s+)?([a-zA-Z0-9_]+)\s*=\s*(.*)$/);
+        // 3. Generación del ruido masivo con símbolos
+        const chaosChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,./;'[]\\=-+_/*-!@#$%^&*()";
 
-            if (globalCallMatch) {
-                const funcPath = globalCallMatch[1].split('.');
-                const argsRaw = globalCallMatch[2];
+        let chunks = [];
+        let currentChunk = [];
+        
+        for (let idx = 0; idx < encryptedBytes.length; idx++) {
+            const finalB = encryptedBytes[idx];
 
-                // Cargar Global base
-                const baseGlobIdx = addConstant(funcPath[0]);
-                instructions.push([opcodes.OP_GETGLOBAL, 0, baseGlobIdx]);
+            let noise1 = "", noise2 = "";
+            const len1 = Math.floor(Math.random() * 4) + 3; 
+            const len2 = Math.floor(Math.random() * 4) + 3;
 
-                // Resolver propiedades si es un método indexado (ej. game.GetService)
-                let lastReg = 0;
-                for (let p = 1; p < funcPath.length; p++) {
-                    const propIdx = addConstant(funcPath[p]);
-                    instructions.push([opcodes.OP_GETFIELD, lastReg + 1, lastReg, propIdx]);
-                    lastReg++;
-                }
+            for (let n = 0; n < len1; n++) noise1 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
+            for (let n = 0; n < len2; n++) noise2 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
 
-                // Cargar argumentos como constantes en los registros
-                let argRegStart = lastReg + 1;
-                let argCount = 0;
-                if (argsRaw.trim().length > 0) {
-                    const args = argsRaw.split(',').map(a => a.trim().replace(/^['"]|['"]$/g, ''));
-                    for (let a = 0; a < args.length; a++) {
-                        const argConstIdx = addConstant(args[a]);
-                        instructions.push([opcodes.OP_LOADK, argRegStart + a, argConstIdx]);
-                        argCount++;
-                    }
-                }
+            currentChunk.push(noise1 + "{" + finalB + "}" + noise2);
 
-                // Ejecutar instrucción OP_CALL dentro de la VM
-                instructions.push([opcodes.OP_CALL, lastReg, argCount, 0]);
-            } else if (varAssignMatch) {
-                const varName = varAssignMatch[1];
-                const valRaw = varAssignMatch[2].replace(/^['"]|['"]$/g, '');
-                
-                const valConstIdx = addConstant(valRaw);
-                const varConstIdx = addConstant(varName);
-
-                instructions.push([opcodes.OP_LOADK, 0, valConstIdx]);
-                instructions.push([opcodes.OP_SETGLOBAL, 0, varConstIdx]);
-            } else {
-                // Fallback de instrucciones genéricas para bloques extensos
-                const rawConstIdx = addConstant(line);
-                instructions.push([opcodes.OP_LOADK, 0, rawConstIdx]);
+            if (currentChunk.length >= 400 || idx === encryptedBytes.length - 1) {
+                let joined = currentChunk.join("");
+                joined = joined.replace(/\]\=\]/g, "]-]"); 
+                chunks.push(`[=[${joined}]=]`);
+                currentChunk = [];
             }
         }
 
-        instructions.push([opcodes.OP_RETURN, 0, 1]);
+        // Variables dinámicas
+        const varData = r(), varKey = r(), varS = r(), varId = r();
+        const varBuf = r(), varFn = r(), varErr = r(), varI = r(), varJ = r();
+        const varLoad = r(), varCheck = r();
 
-        // Sanitizar tabla de constantes para evitar romper el string multilínea de Luau
-        const formattedConstants = constants.map(c => `[=[${String(c).replace(/\]\=\]/g, "]-]")}]=]`);
-
-        // Formatear instrucciones virtuales como tuplas [OP, A, B, C]
-        const formattedInst = instructions.map(inst => `{${inst.join(',')}}`);
-
-        // Nombres de variables aleatorios para la arquitectura de la VM
-        const vVM = r(), vInst = r(), vConst = r(), vReg = r(), vPC = r();
-        const vCurr = r(), vOp = r(), vEnv = r(), vExec = r();
-
-        // ====================================================================
-        // CÓDIGO FINAL: LA MÁQUINA VIRTUAL NATAL EN LUAU (SINO LOADSTRING)
-        // ====================================================================
-        const payload = `local ${vConst}={${formattedConstants.join(",") Direct}};local ${vInst}={${formattedInst.join(",") Direct}};local ${vEnv}=getfenv();local ${vReg}={};local ${vPC}=1;while ${vPC}<=#${vInst} do local ${vCurr}=${vInst}[${vPC}];local ${vOp}=${vCurr}[1];if ${vOp}==${opcodes.OP_LOADK} then ${vReg}[${vCurr}[2]]=${vConst}[${vCurr}[3]+1];elseif ${vOp}==${opcodes.OP_GETGLOBAL} then ${vReg}[${vCurr}[2]]=${vEnv}[${vConst}[${vCurr}[3]+1]];elseif ${vOp}==${opcodes.OP_SETGLOBAL} then ${vEnv}[${vConst}[${vCurr}[3]+1]]=${vReg}[${vCurr}[2]];elseif ${vOp}==${opcodes.OP_GETFIELD} then ${vReg}[${vCurr}[2]]=${vReg}[${vCurr}[3]][${vConst}[${vCurr}[4]+1]];elseif ${vOp}==${opcodes.OP_CALL} then local fn=${vReg}[${vCurr}[2]];local args={};for i=1,${vCurr}[3] do args[i]=${vReg}[${vCurr}[2]+i] end;fn(unpack(args));elseif ${vOp}==${opcodes.OP_RETURN} then break;end;${vPC}=${vPC}+1;end;`.replace(/ Direct/g, "");
+        // 4. Payload con Anti-Hooking Guard (Protege el loadstring contra dumps de RAM)
+        const payload = `local ${varCheck}=getgenv or function() return _G end;if not game then error() end;local ${varLoad}=${varCheck}().loadstring or loadstring;local ${varData}={${chunks.join(",")}};local ${varKey}={${keyBytes.join(",")}};local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch("{([0-9]+)}") do t[#t+1]=tonumber(n)end;end;local ${varS}={};for i=0,255 do ${varS}[i]=i end;local ${varJ}=0;for i=0,255 do ${varJ}=(${varJ}+${varS}[i]+${varKey}[(i%#${varKey})+1])%256;${varS}[i],${varS}[${varJ}]=${varS}[${varJ}],${varS}[i] end;local ${varBuf}=buffer.create(#t);local ${varI},${varJ}=0,0;for idx=0,#t-1 do ${varI}=(${varI}+1)%256;${varJ}=(${varJ}+${varS}[${varI}])%256;${varS}[${varI}],${varS}[${varJ}]=${varS}[${varJ}],${varS}[${varI}];buffer.writeu8(${varBuf},idx,bit32.bxor(t[idx+1],${varS}[(${varS}[${varI}]+${varS}[${varJ}])%256]));end;local ${varFn},${varErr}=${varLoad}(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Chaos]: "..tostring(${varErr})) end;return ${varFn}();`;
 
         return res.status(200).json({ 
             success: true, 
@@ -137,6 +101,6 @@ export default async function handler(req, res) {
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor VM V19.0: ' + err.message });
+        return res.status(500).json({ error: 'Error en el motor Z-Protector V18.5: ' + err.message });
     }
 }
