@@ -57,12 +57,11 @@ export default async function handler(req, res) {
         }
 
         // 3. Delimitadores Dinámicos Únicos por Solicitud
-        // Evita que los bots usen regex estáticos como \{(\d+)\}
         const tagOpen = "._" + Math.random().toString(36).substring(2, 5) + "((";
         const tagClose = "))_." ;
-        const offsetMath = Math.floor(Math.random() * 50) + 15; // Desfase para romper extracción de números puros
+        const offsetMath = Math.floor(Math.random() * 50) + 15;
 
-        // 4. Inyección de Ruido con Símbolos, Espacios, Puntos y Formatos Variables
+        // 4. Inyección de Ruido con Símbolos, Espacios y Formatos Variables
         const chaosChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,./;'[]\\=-+_/*-!@#$%^&*() .";
 
         let chunks = [];
@@ -70,10 +69,9 @@ export default async function handler(req, res) {
 
         for (let idx = 0; idx < encryptedBytes.length; idx++) {
             const rawByte = encryptedBytes[idx];
-            // Aplicar desfase dinámico al byte
             const obfuscatedValue = rawByte + offsetMath;
 
-            // Variación de formato: 30% Hexadecimal (0x5B), 70% Decimal con espacios aleatorios
+            // Formato mixto: Hexadecimal (0x5B) o Decimal
             const formattedVal = (Math.random() > 0.7) 
                 ? "0x" + obfuscatedValue.toString(16) 
                 : "  " + obfuscatedValue + "  ";
@@ -85,7 +83,6 @@ export default async function handler(req, res) {
             for (let n = 0; n < len1; n++) noise1 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
             for (let n = 0; n < len2; n++) noise2 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
 
-            // Ensamblar token con puntos, paréntesis y espacios
             const token = `${noise1} .. ${tagOpen}${formattedVal}${tagClose} .. ${noise2}`;
             currentChunk.push(token);
 
@@ -102,14 +99,16 @@ export default async function handler(req, res) {
         const varBuf = r(), varFn = r(), varErr = r(), varI = r(), varJ = r();
         const varLoad = r(), varCheck = r(), varPattern = r(), varOffset = r();
 
-        // Escapar caracteres especiales para la expresión regular de Luau
-        const regexTagOpen = tagOpen.replace(/[\.\(\)\[\]\^\$\%\+\-\*\?\=]/g, "%%%1");
-        const regexTagClose = tagClose.replace(/[\.\(\)\[\]\^\$\%\+\-\*\?\=]/g, "%%%1");
+        // Escapar caracteres especiales de Luau usando %$&
+        const escapeLuaPattern = (str) => str.replace(/[\%\.\(\)\[\]\^\$\*\+\-\?]/g, '%$&');
         
-        // Patrón dinámico de extracción en Luau
-        const luauRegex = `${regexTagOpen}%s*(0x%x+|%d+)%s*${regexTagClose}`;
+        const regexTagOpen = escapeLuaPattern(tagOpen);
+        const regexTagClose = escapeLuaPattern(tagClose);
+        
+        // Patrón válido para el motor de Luau (%w+ captura tanto hex 0x... como decimales)
+        const luauRegex = `${regexTagOpen}%s*(%%w+)%s*${regexTagClose}`;
 
-        // 6. Payload con Unpacker de Bytecode Protegido y Anti-Hooking Guard
+        // 6. Payload Final
         const payload = `local ${varCheck}=getgenv or function() return _G end;if not game then error() end;local ${varLoad}=${varCheck}().loadstring or loadstring;local ${varOffset}=${offsetMath};local ${varPattern}="${luauRegex}";local ${varData}={${chunks.join(",")}};local ${varKey}={${keyBytes.join(",")}};local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch(${varPattern}) do t[#t+1]=tonumber(n)-${varOffset} end end;local ${varS}={};for i=0,255 do ${varS}[i]=i end;local ${varJ}=0;for i=0,255 do ${varJ}=(${varJ}+${varS}[i]+${varKey}[(i%#${varKey})+1])%256;${varS}[i],${varS}[${varJ}]=${varS}[${varJ}],${varS}[i] end;local ${varBuf}=buffer.create(#t);local ${varI},${varJ}=0,0;for idx=0,#t-1 do ${varI}=(${varI}+1)%256;${varJ}=(${varJ}+${varS}[${varI}])%256;${varS}[${varI}],${varS}[${varJ}]=${varS}[${varJ}],${varS}[${varI}];buffer.writeu8(${varBuf},idx,bit32.bxor(t[idx+1],${varS}[(${varS}[${varI}]+${varS}[${varJ}])%256]));end;local ${varFn},${varErr}=${varLoad}(buffer.tostring(${varBuf}));if not ${varFn} then error("[Z-Chaos Engine]: "..tostring(${varErr})) end;return ${varFn}();`;
 
         return res.status(200).json({
@@ -118,6 +117,6 @@ export default async function handler(req, res) {
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error en el motor Z-Protector V19.0: ' + err.message });
+        return res.status(500).json({ error: 'Error en el motor Z-Protector V19.1: ' + err.message });
     }
 }
