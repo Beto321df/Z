@@ -1,7 +1,7 @@
 export const config = {
     api: {
         bodyParser: {
-            sizeLimit: '8mb',
+            sizeLimit: '4mb', // Soporte para scripts de +5000 líneas
         },
     },
 };
@@ -26,16 +26,23 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        const r = () => "_Z_" + Math.random().toString(36).substring(2, 7) + "_" + Math.floor(Math.random() * 900 + 100);
+        // ====================================================================
+        // Z-PROTECTOR V19.5: RC4 ENHANCED + SPACE CHAOS NOISE ENGINE
+        // Con inyección de espacios aleatorios y Sal Dinámica por byte.
+        // ====================================================================
 
-        // 1. Generar Llave RC4 Dinámica (128 bits)
+        // Generador de variables con estilo Hexadecimal confuso
+        const r = () => "_0x" + Math.random().toString(16).substring(2, 8) + "_" + Math.floor(Math.random()*9000+1000);
+
+        // 1. Generar Llave RC4 (128 bits) y Sal Dinámica
         const keyLen = 16;
         const keyBytes = [];
         for (let k = 0; k < keyLen; k++) {
             keyBytes.push(Math.floor(Math.random() * 256));
         }
+        const saltShift = Math.floor(Math.random() * 170) + 30;
 
-        // 2. Cifrado RC4 (KSA + PRGA)
+        // 2. Cifrado de datos en Node.js (RC4 + Dynamic Salt)
         const utf8Buffer = Buffer.from(code, 'utf-8');
         const encryptedBytes = new Uint8Array(utf8Buffer.length);
 
@@ -53,69 +60,54 @@ export default async function handler(req, res) {
             jPrga = (jPrga + S[iPrga]) % 256;
             const temp = S[iPrga]; S[iPrga] = S[jPrga]; S[jPrga] = temp;
             const K = S[(S[iPrga] + S[jPrga]) % 256];
-            encryptedBytes[k] = utf8Buffer[k] ^ K;
+            
+            // Cifrado RC4 combinado con Sal Dinámica por índice
+            const posSalt = (saltShift + (k * 7)) % 256;
+            encryptedBytes[k] = (utf8Buffer[k] ^ K) ^ posSalt;
         }
 
-        // 3. Delimitadores Dinámicos Únicos por Solicitud
-        const tagOpen = "._" + Math.random().toString(36).substring(2, 5) + "((";
-        const tagClose = "))_." ;
-        const offsetMath = Math.floor(Math.random() * 30) + 10;
-
-        // 4. Inyección de Ruido con Símbolos
-        const chaosChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,./;'[]\\=-+_/*-!@#$%^&*()";
+        // 3. Motor de Ruido Masivo CON ESPACIOS INCLUIDOS
+        const chaosChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,./;'[]\\=-+_/*-!@#$%^&*()      ";
 
         let chunks = [];
         let currentChunk = [];
-
+        
         for (let idx = 0; idx < encryptedBytes.length; idx++) {
-            const rawByte = encryptedBytes[idx];
-            const obfuscatedValue = rawByte + offsetMath;
-
-            // Usar siempre números decimales puros para compatibilidad total con tonumber() en Luau
-            const formattedVal = String(obfuscatedValue);
+            const finalB = encryptedBytes[idx];
 
             let noise1 = "", noise2 = "";
-            const len1 = Math.floor(Math.random() * 5) + 3;
-            const len2 = Math.floor(Math.random() * 5) + 3;
+            const len1 = Math.floor(Math.random() * 6) + 3; 
+            const len2 = Math.floor(Math.random() * 6) + 3;
 
             for (let n = 0; n < len1; n++) noise1 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
             for (let n = 0; n < len2; n++) noise2 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
 
-            const token = `${noise1}..${tagOpen}${formattedVal}${tagClose}..${noise2}`;
-            currentChunk.push(token);
+            // Inyectamos espacios impredecibles alrededor del bloque {byte}
+            const randomSpaces = " ".repeat(Math.floor(Math.random() * 3));
+            currentChunk.push(noise1 + randomSpaces + "{" + finalB + "}" + randomSpaces + noise2);
 
-            if (currentChunk.length >= 250 || idx === encryptedBytes.length - 1) {
-                let joined = currentChunk.join("..");
-                joined = joined.replace(/\]\=\]/g, "]-]");
+            if (currentChunk.length >= 400 || idx === encryptedBytes.length - 1) {
+                let joined = currentChunk.join("");
+                joined = joined.replace(/\]\=\]/g, "]-]"); 
                 chunks.push(`[=[${joined}]=]`);
                 currentChunk = [];
             }
         }
 
-        // 5. Generación de Identificadores Dinámicos
-        const varData = r(), varKey = r(), varS = r(), varId = r();
+        // Variables dinámicas para el runtime de Luau
+        const varData = r(), varKey = r(), varSalt = r(), varS = r(), varId = r();
         const varBuf = r(), varFn = r(), varErr = r(), varI = r(), varJ = r();
-        const varLoad = r(), varCheck = r(), varPattern = r(), varOffset = r();
-        const varSuccess = r(), varRes = r();
+        const varLoad = r(), varCheck = r();
 
-        // Escapar caracteres especiales de Luau usando %$&
-        const escapeLuaPattern = (str) => str.replace(/[\%\.\(\)\[\]\^\$\*\+\-\?]/g, '%$&');
-        
-        const regexTagOpen = escapeLuaPattern(tagOpen);
-        const regexTagClose = escapeLuaPattern(tagClose);
-        
-        // Patrón con dígitos (%d+) 100% compatible con tonumber() en Luau
-        const luauRegex = `${regexTagOpen}(%%d+)${regexTagClose}`;
+        // 4. Payload Final con Desencritador RC4 + Sal Dinámica en Luau
+        const payload = `local ${varCheck}=getgenv or function() return _G end;if not game then error() end;local ${varLoad}=${varCheck}().loadstring or loadstring;local ${varData}={${chunks.join(",")}};local ${varKey}={${keyBytes.join(",")}};local ${varSalt}=${saltShift};local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch("{([0-9]+)}") do t[#t+1]=tonumber(n)end;end;local ${varS}={};for i=0,255 do ${varS}[i]=i end;local ${varJ}=0;for i=0,255 do ${varJ}=(${varJ}+${varS}[i]+${varKey}[(i%#${varKey})+1])%256;${varS}[i],${varS}[${varJ}]=${varS}[${varJ}],${varS}[i] end;local ${varBuf}=buffer.create(#t);local ${varI},${varJ}=0,0;for idx=0,#t-1 do ${varI}=(${varI}+1)%256;${varJ}=(${varJ}+${varS}[${varI}])%256;${varS}[${varI}],${varS}[${varJ}]=${varS}[${varJ}],${varS}[${varI}];local kVal=bit32.bxor(t[idx+1],${varS}[(${varS}[${varI}]+${varS}[${varJ}])%256]);buffer.writeu8(${varBuf},idx,bit32.bxor(kVal,(${varSalt}+(idx*7))%256));end;local ${varFn},${varErr}=${varLoad}(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Chaos V19.5]: "..tostring(${varErr})) end;return ${varFn}();`;
 
-        // 6. Payload Final con Manejo de Errores Visible en Consola
-        const payload = `local ${varCheck}=getgenv or function() return _G end;if not game then error() end;local ${varLoad}=${varCheck}().loadstring or loadstring;local ${varOffset}=${offsetMath};local ${varPattern}="${luauRegex}";local ${varData}={${chunks.join(",")}};local ${varKey}={${keyBytes.join(",")}};local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch(${varPattern}) do t[#t+1]=(tonumber(n) or 0)-${varOffset} end end;local ${varS}={};for i=0,255 do ${varS}[i]=i end;local ${varJ}=0;for i=0,255 do ${varJ}=(${varJ}+${varS}[i]+${varKey}[(i%#${varKey})+1])%256;${varS}[i],${varS}[${varJ}]=${varS}[${varJ}],${varS}[i] end;local ${varBuf}=buffer.create(#t);local ${varI},${varJ}=0,0;for idx=0,#t-1 do ${varI}=(${varI}+1)%256;${varJ}=(${varJ}+${varS}[${varI}])%256;${varS}[${varI}],${varS}[${varJ}]=${varS}[${varJ}],${varS}[${varI}];buffer.writeu8(${varBuf},idx,bit32.bxor(t[idx+1],${varS}[(${varS}[${varI}]+${varS}[${varJ}])%256]));end;local ${varFn},${varErr}=${varLoad}(buffer.tostring(${varBuf}));if not ${varFn} then warn("[Z-Chaos Engine Syntax Error]: "..tostring(${varErr})) return end;local ${varSuccess},${varRes}=pcall(${varFn});if not ${varSuccess} then warn("[Z-Chaos Engine Runtime Error]: "..tostring(${varRes})) end;return ${varRes};`;
-
-        return res.status(200).json({
-            success: true,
-            obfuscatedCode: payload
+        return res.status(200).json({ 
+            success: true, 
+            obfuscatedCode: payload 
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error en el motor Z-Protector V19.3: ' + err.message });
+        return res.status(500).json({ error: 'Error en el motor Z-Protector V19.5: ' + err.message });
     }
 }
