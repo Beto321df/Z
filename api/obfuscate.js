@@ -27,11 +27,11 @@ export default async function handler(req, res) {
         }
 
         // ====================================================================
-        // Z-PROTECTOR V16: POLYMORPHIC CHAOS ENGINE (MULTIESTILO DINÁMICO)
-        // Cambia aleatoriamente de estilo de ruido en cada ofuscación:
+        // Z-PROTECTOR V16.1: POLYMORPHIC CHAOS ENGINE (SEGURO Y DINÁMICO)
+        // 3 estilos de ruido visual limpios de escapes peligrosos:
         // 1. Letras, números y símbolos
-        // 2. Solo letras y símbolos (CERO números en el ruido)
-        // 3. Solo números y símbolos (CERO letras en el ruido)
+        // 2. Solo letras y símbolos (CERO números, sin backslash)
+        // 3. Solo números y símbolos (CERO letras)
         // ====================================================================
 
         const r = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
@@ -40,12 +40,12 @@ export default async function handler(req, res) {
 
         const utf8Buffer = Buffer.from(code, 'utf-8');
 
-        // Los 3 estilos de ruido visual que pediste
+        // Los 3 estilos seguros (sin diagonales invertidas que rompan los strings de Lua)
         const chaosStyles = [
             // Estilo 1: Letras, números y símbolos
             "abcdefghijklmnopqrstuvwxyz0123456789/.;.,?*#@_+",
-            // Estilo 2: Solo letras y símbolos (Sin números)
-            "abcdefghijklmnopqrstuvwxyz/.;.,?*#@_+-=\\",
+            // Estilo 2: Solo letras y símbolos (Sin números, sin backslash)
+            "abcdefghijklmnopqrstuvwxyz/.;.,?*#@_+-_",
             // Estilo 3: Solo números y símbolos (Sin letras)
             "0123456789/[]-.;.,?*#@_+"
         ];
@@ -94,6 +94,6 @@ local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor V16: ' + err.message });
+        return res.status(500).json({ error: 'Error crítico en el motor V16.1: ' + err.message });
     }
 }
