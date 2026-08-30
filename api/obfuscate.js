@@ -1,7 +1,7 @@
 export const config = {
     api: {
         bodyParser: {
-            sizeLimit: '4mb',
+            sizeLimit: '4mb', // Tamaño límite alto para los scripts masivos
         },
     },
 };
@@ -27,11 +27,9 @@ export default async function handler(req, res) {
         }
 
         // ====================================================================
-        // Z-PROTECTOR V16.1: POLYMORPHIC CHAOS ENGINE (UNA SOLA CAPA)
-        // Alterna entre los 3 estilos de ruido sin trabar el servidor:
-        // 1. Letras, números y símbolos
-        // 2. Solo letras y símbolos (CERO números)
-        // 3. Solo números y símbolos (CERO letras)
+        // Z-PROTECTOR V17.0: ABSOLUTE CHAOS ENGINE (CAPA ÚNICA)
+        // Optimizadísimo para +5000 líneas.
+        // Símbolos, letras y números al máximo nivel de ilegibilidad.
         // ====================================================================
 
         const r = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
@@ -40,39 +38,40 @@ export default async function handler(req, res) {
 
         const utf8Buffer = Buffer.from(code, 'utf-8');
 
-        const chaosStyles = [
-            // Estilo 1: Letras, números y símbolos
-            "abcdefghijklmnopqrstuvwxyz0123456789/.;.,?*#@_+",
-            // Estilo 2: Solo letras y símbolos (Sin números)
-            "abcdefghijklmnopqrstuvwxyz/.;.,?*#@_+-_",
-            // Estilo 3: Solo números y símbolos (Sin letras)
-            "0123456789/[]-.;.,?*#@_+"
-        ];
+        // CAOS TOTAL: Todos los caracteres que pediste mezclados.
+        // OJO: Excluimos '{' y '}' porque los usaremos como delimitadores seguros.
+        const chaosChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,./;'[]\\=-+_/*-!@#$%^&*()";
 
-        // Selecciona un estilo al azar en cada ofuscación
-        const selectedChaosChars = chaosStyles[Math.floor(Math.random() * chaosStyles.length)];
-        
         let chunks = [];
-        let currentChunk = "";
+        let currentChunk = [];
         
+        // Bucle optimizado usando arrays para no saturar la RAM con strings gigantes
         for (let i = 0; i < utf8Buffer.length; i++) {
             const b = utf8Buffer[i];
             const b1 = b ^ (k2 & 15);
             const b2 = (k1 + (i * 3)) % 256;
             const finalB = b1 ^ b2;
 
-            let noise1 = "", noise2 = "";
-            const len1 = Math.floor(Math.random() * 3) + 2;
-            const len2 = Math.floor(Math.random() * 3) + 2;
+            let noise1 = "";
+            let noise2 = "";
             
-            for (let j = 0; j < len1; j++) noise1 += selectedChaosChars[Math.floor(Math.random() * selectedChaosChars.length)];
-            for (let j = 0; j < len2; j++) noise2 += selectedChaosChars[Math.floor(Math.random() * selectedChaosChars.length)];
+            // Más cantidad de basura por byte para engrosar la ofuscación (3 a 7 caracteres de ruido de cada lado)
+            const len1 = Math.floor(Math.random() * 5) + 3; 
+            const len2 = Math.floor(Math.random() * 5) + 3;
 
-            currentChunk += "/" + noise1 + "=" + finalB + "]" + noise2 + "/";
+            for (let j = 0; j < len1; j++) noise1 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
+            for (let j = 0; j < len2; j++) noise2 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
 
-            if (currentChunk.length > 800 || i === utf8Buffer.length - 1) {
-                chunks.push(`"${currentChunk}"`);
-                currentChunk = "";
+            // Envolvemos el byte real en { } para que el gmatch de Lua no se confunda con la basura
+            currentChunk.push(noise1 + "{" + finalB + "}" + noise2);
+
+            // Cada 500 bytes creamos un chunk nuevo para que Roblox no sufra leyendo un string infinito
+            if (currentChunk.length >= 500 || i === utf8Buffer.length - 1) {
+                let joined = currentChunk.join("");
+                // Prevención de errores: Evita que el caos genere por accidente el cierre de string ]=] de Lua
+                joined = joined.replace(/\]\=\]/g, "]-]"); 
+                chunks.push(`[=[${joined}]=]`);
+                currentChunk = [];
             }
         }
 
@@ -84,7 +83,8 @@ export default async function handler(req, res) {
         const varFn = r();
         const varErr = r();
 
-        const payload = `local ${varData}={${chunks.join(",")}};local ${varKey1}=${k1};local ${varKey2}=${k2};if not game then error()end;local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch("=([0-9]+)%]") do t[#t+1]=tonumber(n)end;end;local ${varBuf}=buffer.create(#t);for i=1,#t do local v=t[i];local idx=i-1;local u=bit32.bxor(v,(${varKey1}+(idx*3))%256);buffer.writeu8(${varBuf},idx,bit32.bxor(u,bit32.band(${varKey2},15)));end;
+        // El regex ahora es "{([0-9]+)}" para extraer el byte de entre toda la nueva tormenta de símbolos
+        const payload = `local ${varData}={${chunks.join(",")}};local ${varKey1}=${k1};local ${varKey2}=${k2};if not game then error()end;local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch("{([0-9]+)}") do t[#t+1]=tonumber(n)end;end;local ${varBuf}=buffer.create(#t);for i=1,#t do local v=t[i];local idx=i-1;local u=bit32.bxor(v,(${varKey1}+(idx*3))%256);buffer.writeu8(${varBuf},idx,bit32.bxor(u,bit32.band(${varKey2},15)));end;
 local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Chaos]: "..tostring(${varErr})) end;return ${varFn}();`;
 
         return res.status(200).json({ 
@@ -93,6 +93,6 @@ local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor V16.1: ' + err.message });
+        return res.status(500).json({ error: 'Error crítico en el motor V17.0: ' + err.message });
     }
 }
