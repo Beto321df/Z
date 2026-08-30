@@ -27,9 +27,8 @@ export default async function handler(req, res) {
         }
 
         // ====================================================================
-        // Z-PROTECTOR V17: DOUBLE CHAOS ENGINE (DOBLE CAPA POLIMÓRFICA)
-        // Cifra el script en caos (Capa 1) y luego cifra el cargador (Capa 2).
-        // ¡Cero texto plano visible de principio a fin!
+        // Z-PROTECTOR V17.1: TURBO DOUBLE CHAOS ENGINE (OPTIMIZADO PARA VERCEL)
+        // Mantiene la doble capa de seguridad pero usa arreglos para cero lag.
         // ====================================================================
 
         const chaosStyles = [
@@ -40,7 +39,7 @@ export default async function handler(req, res) {
 
         const r = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
 
-        // Función reutilizable para aplicar el motor de caos a cualquier texto
+        // Motor ultra-optimizado con arreglos (.push y .join) para evitar congelamientos
         const encodeToChaos = (inputString) => {
             const k1 = Math.floor(Math.random() * 180) + 40;
             const k2 = Math.floor(Math.random() * 150) + 20;
@@ -48,7 +47,8 @@ export default async function handler(req, res) {
             const selectedChaosChars = chaosStyles[Math.floor(Math.random() * chaosStyles.length)];
             
             let chunks = [];
-            let currentChunk = "";
+            let chunkParts = [];
+            let currentLen = 0;
             
             for (let i = 0; i < utf8Buffer.length; i++) {
                 const b = utf8Buffer[i];
@@ -63,11 +63,14 @@ export default async function handler(req, res) {
                 for (let j = 0; j < len1; j++) noise1 += selectedChaosChars[Math.floor(Math.random() * selectedChaosChars.length)];
                 for (let j = 0; j < len2; j++) noise2 += selectedChaosChars[Math.floor(Math.random() * selectedChaosChars.length)];
 
-                currentChunk += "/" + noise1 + "=" + finalB + "]" + noise2 + "/";
+                const fragment = "/" + noise1 + "=" + finalB + "]" + noise2 + "/";
+                chunkParts.push(fragment);
+                currentLen += fragment.length;
 
-                if (currentChunk.length > 800 || i === utf8Buffer.length - 1) {
-                    chunks.push(`"${currentChunk}"`);
-                    currentChunk = "";
+                if (currentLen > 800 || i === utf8Buffer.length - 1) {
+                    chunks.push(`"${chunkParts.join("")}"`);
+                    chunkParts = [];
+                    currentLen = 0;
                 }
             }
 
@@ -82,9 +85,9 @@ export default async function handler(req, res) {
             return `local ${varData}={${chunks.join(",")}};local ${varKey1}=${k1};local ${varKey2}=${k2};if not game then error()end;local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch("=([0-9]+)%]") do t[#t+1]=tonumber(n)end;end;local ${varBuf}=buffer.create(#t);for i=1,#t do local v=t[i];local idx=i-1;local u=bit32.bxor(v,(${varKey1}+(idx*3))%256);buffer.writeu8(${varBuf},idx,bit32.bxor(u,bit32.band(${varKey2},15)));end;local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Chaos]: "..tostring(${varErr})) end;return ${varFn}();`;
         };
 
-        // Aplicamos la doble capa:
-        const layer1 = encodeToChaos(code);       // Cifra tu script
-        const finalPayload = encodeToChaos(layer1); // Cifra el cargador de la capa 1
+        // Aplicamos la doble capa turbo
+        const layer1 = encodeToChaos(code);       
+        const finalPayload = encodeToChaos(layer1); 
 
         return res.status(200).json({ 
             success: true, 
@@ -92,6 +95,6 @@ export default async function handler(req, res) {
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor V17: ' + err.message });
+        return res.status(500).json({ error: 'Error crítico en el motor V17.1: ' + err.message });
     }
 }
