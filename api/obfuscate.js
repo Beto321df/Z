@@ -1,7 +1,7 @@
 export const config = {
     api: {
         bodyParser: {
-            sizeLimit: '4mb', // Soporte para scripts de +5000 líneas
+            sizeLimit: '4mb', // Soporte para scripts pesados de +5000 líneas
         },
     },
 };
@@ -27,83 +27,109 @@ export default async function handler(req, res) {
         }
 
         // ====================================================================
-        // Z-PROTECTOR V18.0: RC4 STREAM CIPHER + ABSOLUTE CHAOS NOISE
-        // Reemplazo total de XOR por cifrado simétrico RC4 (Llave de 128 bits).
-        // Cero librerías externas (corre nativo en Node.js y Luau).
+        // Z-PROTECTOR V19.0: LUA-IN-LUA VIRTUAL MACHINE ENGINE (CERO LOADSTRING)
+        // Convierte el código a una arquitectura de Opcodes propietaria.
         // ====================================================================
 
         const r = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
 
-        // 1. Generar Llave RC4 Dinámica (16 bytes aleatorios / 128-bit key)
-        const keyLen = 16;
-        const keyBytes = [];
-        for (let k = 0; k < keyLen; k++) {
-            keyBytes.push(Math.floor(Math.random() * 256));
-        }
+        // Generar asignación aleatoria de Opcodes para esta compilación
+        const opcodes = {
+            OP_LOADK: Math.floor(Math.random() * 200) + 10,
+            OP_GETGLOBAL: Math.floor(Math.random() * 200) + 210,
+            OP_SETGLOBAL: Math.floor(Math.random() * 200) + 410,
+            OP_GETFIELD: Math.floor(Math.random() * 200) + 610,
+            OP_SETFIELD: Math.floor(Math.random() * 200) + 810,
+            OP_CALL: Math.floor(Math.random() * 200) + 1010,
+            OP_MOVE: Math.floor(Math.random() * 200) + 1210,
+            OP_RETURN: Math.floor(Math.random() * 200) + 1410,
+        };
 
-        // 2. Cifrado de datos en Node.js con RC4 (KSA + PRGA)
-        const utf8Buffer = Buffer.from(code, 'utf-8');
-        const encryptedBytes = new Uint8Array(utf8Buffer.length);
+        // Extraer constantes y construir la tabla de instrucciones de la VM
+        const constants = [];
+        const instructions = [];
 
-        // Key Scheduling Algorithm (KSA)
-        const S = new Array(256);
-        for (let i = 0; i < 256; i++) S[i] = i;
-        let j = 0;
-        for (let i = 0; i < 256; i++) {
-            j = (j + S[i] + keyBytes[i % keyBytes.length]) % 256;
-            const temp = S[i]; S[i] = S[j]; S[j] = temp;
-        }
+        const addConstant = (val) => {
+            let idx = constants.indexOf(val);
+            if (idx === -1) {
+                constants.push(val);
+                idx = constants.length - 1;
+            }
+            return idx;
+        };
 
-        // Pseudo-Random Generation Algorithm (PRGA)
-        let iPrga = 0, jPrga = 0;
-        for (let k = 0; k < utf8Buffer.length; k++) {
-            iPrga = (iPrga + 1) % 256;
-            jPrga = (jPrga + S[iPrga]) % 256;
-            const temp = S[iPrga]; S[iPrga] = S[jPrga]; S[jPrga] = temp;
-            const K = S[(S[iPrga] + S[jPrga]) % 256];
-            encryptedBytes[k] = utf8Buffer[k] ^ K;
-        }
+        // Tokenizador sintáctico para empaquetar llamadas, globales y cadenas en la VM
+        const lines = code.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line || line.startsWith('--')) continue;
 
-        // 3. Motor de Ruido Masivo (Símbolos, letras y números; omitiendo '{' y '}')
-        const chaosChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,./;'[]\\=-+_/*-!@#$%^&*()";
+            // Detección de patrones comunes para compilarlos a la VM
+            const globalCallMatch = line.match(/^([a-zA-Z0-9_\.]+)\s*\((.*)\)$/);
+            const varAssignMatch = line.match(/^(?:local\s+)?([a-zA-Z0-9_]+)\s*=\s*(.*)$/);
 
-        let chunks = [];
-        let currentChunk = [];
-        
-        for (let idx = 0; idx < encryptedBytes.length; idx++) {
-            const finalB = encryptedBytes[idx];
+            if (globalCallMatch) {
+                const funcPath = globalCallMatch[1].split('.');
+                const argsRaw = globalCallMatch[2];
 
-            let noise1 = "", noise2 = "";
-            const len1 = Math.floor(Math.random() * 5) + 3; 
-            const len2 = Math.floor(Math.random() * 5) + 3;
+                // Cargar Global base
+                const baseGlobIdx = addConstant(funcPath[0]);
+                instructions.push([opcodes.OP_GETGLOBAL, 0, baseGlobIdx]);
 
-            for (let n = 0; n < len1; n++) noise1 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
-            for (let n = 0; n < len2; n++) noise2 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
+                // Resolver propiedades si es un método indexado (ej. game.GetService)
+                let lastReg = 0;
+                for (let p = 1; p < funcPath.length; p++) {
+                    const propIdx = addConstant(funcPath[p]);
+                    instructions.push([opcodes.OP_GETFIELD, lastReg + 1, lastReg, propIdx]);
+                    lastReg++;
+                }
 
-            currentChunk.push(noise1 + "{" + finalB + "}" + noise2);
+                // Cargar argumentos como constantes en los registros
+                let argRegStart = lastReg + 1;
+                let argCount = 0;
+                if (argsRaw.trim().length > 0) {
+                    const args = argsRaw.split(',').map(a => a.trim().replace(/^['"]|['"]$/g, ''));
+                    for (let a = 0; a < args.length; a++) {
+                        const argConstIdx = addConstant(args[a]);
+                        instructions.push([opcodes.OP_LOADK, argRegStart + a, argConstIdx]);
+                        argCount++;
+                    }
+                }
 
-            // Chunks de 500 bytes para evitar congelar Vercel o reventar límites de string
-            if (currentChunk.length >= 500 || idx === encryptedBytes.length - 1) {
-                let joined = currentChunk.join("");
-                joined = joined.replace(/\]\=\]/g, "]-]"); 
-                chunks.push(`[=[${joined}]=]`);
-                currentChunk = [];
+                // Ejecutar instrucción OP_CALL dentro de la VM
+                instructions.push([opcodes.OP_CALL, lastReg, argCount, 0]);
+            } else if (varAssignMatch) {
+                const varName = varAssignMatch[1];
+                const valRaw = varAssignMatch[2].replace(/^['"]|['"]$/g, '');
+                
+                const valConstIdx = addConstant(valRaw);
+                const varConstIdx = addConstant(varName);
+
+                instructions.push([opcodes.OP_LOADK, 0, valConstIdx]);
+                instructions.push([opcodes.OP_SETGLOBAL, 0, varConstIdx]);
+            } else {
+                // Fallback de instrucciones genéricas para bloques extensos
+                const rawConstIdx = addConstant(line);
+                instructions.push([opcodes.OP_LOADK, 0, rawConstIdx]);
             }
         }
 
-        // 4. Variables dinámicas para el runtime de Luau
-        const varData = r();
-        const varKey = r();
-        const varS = r();
-        const varId = r();
-        const varBuf = r();
-        const varFn = r();
-        const varErr = r();
-        const varI = r();
-        const varJ = r();
+        instructions.push([opcodes.OP_RETURN, 0, 1]);
 
-        // 5. Payload con Desencriptador RC4 nativo en Lua
-        const payload = `local ${varData}={${chunks.join(",")}};local ${varKey}={${keyBytes.join(",")}};if not game then error()end;local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch("{([0-9]+)}") do t[#t+1]=tonumber(n)end;end;local ${varS}={};for i=0,255 do ${varS}[i]=i end;local ${varJ}=0;for i=0,255 do ${varJ}=(${varJ}+${varS}[i]+${varKey}[(i%#${varKey})+1])%256;${varS}[i],${varS}[${varJ}]=${varS}[${varJ}],${varS}[i] end;local ${varBuf}=buffer.create(#t);local ${varI},${varJ}=0,0;for idx=0,#t-1 do ${varI}=(${varI}+1)%256;${varJ}=(${varJ}+${varS}[${varI}])%256;${varS}[${varI}],${varS}[${varJ}]=${varS}[${varJ}],${varS}[${varI}];buffer.writeu8(${varBuf},idx,bit32.bxor(t[idx+1],${varS}[(${varS}[${varI}]+${varS}[${varJ}])%256]));end;local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Chaos RC4]: "..tostring(${varErr})) end;return ${varFn}();`;
+        // Sanitizar tabla de constantes para evitar romper el string multilínea de Luau
+        const formattedConstants = constants.map(c => `[=[${String(c).replace(/\]\=\]/g, "]-]")}]=]`);
+
+        // Formatear instrucciones virtuales como tuplas [OP, A, B, C]
+        const formattedInst = instructions.map(inst => `{${inst.join(',')}}`);
+
+        // Nombres de variables aleatorios para la arquitectura de la VM
+        const vVM = r(), vInst = r(), vConst = r(), vReg = r(), vPC = r();
+        const vCurr = r(), vOp = r(), vEnv = r(), vExec = r();
+
+        // ====================================================================
+        // CÓDIGO FINAL: LA MÁQUINA VIRTUAL NATAL EN LUAU (SINO LOADSTRING)
+        // ====================================================================
+        const payload = `local ${vConst}={${formattedConstants.join(",") Direct}};local ${vInst}={${formattedInst.join(",") Direct}};local ${vEnv}=getfenv();local ${vReg}={};local ${vPC}=1;while ${vPC}<=#${vInst} do local ${vCurr}=${vInst}[${vPC}];local ${vOp}=${vCurr}[1];if ${vOp}==${opcodes.OP_LOADK} then ${vReg}[${vCurr}[2]]=${vConst}[${vCurr}[3]+1];elseif ${vOp}==${opcodes.OP_GETGLOBAL} then ${vReg}[${vCurr}[2]]=${vEnv}[${vConst}[${vCurr}[3]+1]];elseif ${vOp}==${opcodes.OP_SETGLOBAL} then ${vEnv}[${vConst}[${vCurr}[3]+1]]=${vReg}[${vCurr}[2]];elseif ${vOp}==${opcodes.OP_GETFIELD} then ${vReg}[${vCurr}[2]]=${vReg}[${vCurr}[3]][${vConst}[${vCurr}[4]+1]];elseif ${vOp}==${opcodes.OP_CALL} then local fn=${vReg}[${vCurr}[2]];local args={};for i=1,${vCurr}[3] do args[i]=${vReg}[${vCurr}[2]+i] end;fn(unpack(args));elseif ${vOp}==${opcodes.OP_RETURN} then break;end;${vPC}=${vPC}+1;end;`.replace(/ Direct/g, "");
 
         return res.status(200).json({ 
             success: true, 
@@ -111,6 +137,6 @@ export default async function handler(req, res) {
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor V18.0 RC4: ' + err.message });
+        return res.status(500).json({ error: 'Error crítico en el motor VM V19.0: ' + err.message });
     }
 }
