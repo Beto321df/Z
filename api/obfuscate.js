@@ -27,8 +27,11 @@ export default async function handler(req, res) {
         }
 
         // ====================================================================
-        // Z-PROTECTOR V15.3: TRUE CHAOS-NOISE ENGINE (DELIMITADORES SEGUROS)
-        // Mantiene el glitch visual exacto pero blinda el gmatch contra conflictos.
+        // Z-PROTECTOR V16: POLYMORPHIC CHAOS ENGINE (MULTIESTILO DINÁMICO)
+        // Cambia aleatoriamente de estilo de ruido en cada ofuscación:
+        // 1. Letras, números y símbolos
+        // 2. Solo letras y símbolos (CERO números en el ruido)
+        // 3. Solo números y símbolos (CERO letras en el ruido)
         // ====================================================================
 
         const r = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
@@ -36,8 +39,19 @@ export default async function handler(req, res) {
         const k2 = Math.floor(Math.random() * 150) + 20;
 
         const utf8Buffer = Buffer.from(code, 'utf-8');
-        // Quitamos '=', '[' y ']' del ruido para que los delimitadores del gmatch sean 100% seguros y únicos
-        const chaosChars = "abcdefghijklmnopqrstuvwxyz0123456789/.;.,?*#@_+";
+
+        // Los 3 estilos de ruido visual que pediste
+        const chaosStyles = [
+            // Estilo 1: Letras, números y símbolos
+            "abcdefghijklmnopqrstuvwxyz0123456789/.;.,?*#@_+",
+            // Estilo 2: Solo letras y símbolos (Sin números)
+            "abcdefghijklmnopqrstuvwxyz/.;.,?*#@_+-=\\",
+            // Estilo 3: Solo números y símbolos (Sin letras)
+            "0123456789/[]-.;.,?*#@_+"
+        ];
+
+        // Selecciona un estilo al azar en cada nueva ofuscación
+        const selectedChaosChars = chaosStyles[Math.floor(Math.random() * chaosStyles.length)];
         
         let chunks = [];
         let currentChunk = "";
@@ -52,8 +66,8 @@ export default async function handler(req, res) {
             const len1 = Math.floor(Math.random() * 3) + 2;
             const len2 = Math.floor(Math.random() * 3) + 2;
             
-            for (let j = 0; j < len1; j++) noise1 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
-            for (let j = 0; j < len2; j++) noise2 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
+            for (let j = 0; j < len1; j++) noise1 += selectedChaosChars[Math.floor(Math.random() * selectedChaosChars.length)];
+            for (let j = 0; j < len2; j++) noise2 += selectedChaosChars[Math.floor(Math.random() * selectedChaosChars.length)];
 
             currentChunk += "/" + noise1 + "=" + finalB + "]" + noise2 + "/";
 
@@ -80,6 +94,6 @@ local ${varFn},${varErr}=(getgenv and getgenv().loadstring or loadstring)(buffer
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error crítico en el motor V15.3: ' + err.message });
+        return res.status(500).json({ error: 'Error crítico en el motor V16: ' + err.message });
     }
 }
