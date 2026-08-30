@@ -1,7 +1,7 @@
 export const config = {
     api: {
         bodyParser: {
-            sizeLimit: '4mb',
+            sizeLimit: '8mb',
         },
     },
 };
@@ -26,12 +26,7 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Debes proporcionar un código Lua válido.' });
         }
 
-        // ====================================================================
-        // Z-PROTECTOR V18.5: RC4 CIPHER + ANTI-HOOK GUARD + CHAOS NOISE
-        // Cero fallas de sintaxis, compatible con el 100% de scripts de Luau.
-        // ====================================================================
-
-        const r = () => "_Z_" + Math.random().toString(36).substring(2, 6) + "_" + Math.floor(Math.random()*900+100);
+        const r = () => "_Z_" + Math.random().toString(36).substring(2, 7) + "_" + Math.floor(Math.random() * 900 + 100);
 
         // 1. Generar Llave RC4 Dinámica (128 bits)
         const keyLen = 16;
@@ -40,7 +35,7 @@ export default async function handler(req, res) {
             keyBytes.push(Math.floor(Math.random() * 256));
         }
 
-        // 2. Cifrado de datos RC4 (KSA + PRGA)
+        // 2. Cifrado RC4 (KSA + PRGA)
         const utf8Buffer = Buffer.from(code, 'utf-8');
         const encryptedBytes = new Uint8Array(utf8Buffer.length);
 
@@ -61,46 +56,68 @@ export default async function handler(req, res) {
             encryptedBytes[k] = utf8Buffer[k] ^ K;
         }
 
-        // 3. Generación del ruido masivo con símbolos
-        const chaosChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,./;'[]\\=-+_/*-!@#$%^&*()";
+        // 3. Delimitadores Dinámicos Únicos por Solicitud
+        // Evita que los bots usen regex estáticos como \{(\d+)\}
+        const tagOpen = "._" + Math.random().toString(36).substring(2, 5) + "((";
+        const tagClose = "))_." ;
+        const offsetMath = Math.floor(Math.random() * 50) + 15; // Desfase para romper extracción de números puros
+
+        // 4. Inyección de Ruido con Símbolos, Espacios, Puntos y Formatos Variables
+        const chaosChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789,./;'[]\\=-+_/*-!@#$%^&*() .";
 
         let chunks = [];
         let currentChunk = [];
-        
+
         for (let idx = 0; idx < encryptedBytes.length; idx++) {
-            const finalB = encryptedBytes[idx];
+            const rawByte = encryptedBytes[idx];
+            // Aplicar desfase dinámico al byte
+            const obfuscatedValue = rawByte + offsetMath;
+
+            // Variación de formato: 30% Hexadecimal (0x5B), 70% Decimal con espacios aleatorios
+            const formattedVal = (Math.random() > 0.7) 
+                ? "0x" + obfuscatedValue.toString(16) 
+                : "  " + obfuscatedValue + "  ";
 
             let noise1 = "", noise2 = "";
-            const len1 = Math.floor(Math.random() * 4) + 3; 
-            const len2 = Math.floor(Math.random() * 4) + 3;
+            const len1 = Math.floor(Math.random() * 6) + 3;
+            const len2 = Math.floor(Math.random() * 6) + 3;
 
             for (let n = 0; n < len1; n++) noise1 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
             for (let n = 0; n < len2; n++) noise2 += chaosChars[Math.floor(Math.random() * chaosChars.length)];
 
-            currentChunk.push(noise1 + "{" + finalB + "}" + noise2);
+            // Ensamblar token con puntos, paréntesis y espacios
+            const token = `${noise1} .. ${tagOpen}${formattedVal}${tagClose} .. ${noise2}`;
+            currentChunk.push(token);
 
-            if (currentChunk.length >= 400 || idx === encryptedBytes.length - 1) {
-                let joined = currentChunk.join("");
-                joined = joined.replace(/\]\=\]/g, "]-]"); 
+            if (currentChunk.length >= 300 || idx === encryptedBytes.length - 1) {
+                let joined = currentChunk.join(" .. ");
+                joined = joined.replace(/\]\=\]/g, "]-]");
                 chunks.push(`[=[${joined}]=]`);
                 currentChunk = [];
             }
         }
 
-        // Variables dinámicas
+        // 5. Generación de Identificadores Dinámicos
         const varData = r(), varKey = r(), varS = r(), varId = r();
         const varBuf = r(), varFn = r(), varErr = r(), varI = r(), varJ = r();
-        const varLoad = r(), varCheck = r();
+        const varLoad = r(), varCheck = r(), varPattern = r(), varOffset = r();
 
-        // 4. Payload con Anti-Hooking Guard (Protege el loadstring contra dumps de RAM)
-        const payload = `local ${varCheck}=getgenv or function() return _G end;if not game then error() end;local ${varLoad}=${varCheck}().loadstring or loadstring;local ${varData}={${chunks.join(",")}};local ${varKey}={${keyBytes.join(",")}};local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch("{([0-9]+)}") do t[#t+1]=tonumber(n)end;end;local ${varS}={};for i=0,255 do ${varS}[i]=i end;local ${varJ}=0;for i=0,255 do ${varJ}=(${varJ}+${varS}[i]+${varKey}[(i%#${varKey})+1])%256;${varS}[i],${varS}[${varJ}]=${varS}[${varJ}],${varS}[i] end;local ${varBuf}=buffer.create(#t);local ${varI},${varJ}=0,0;for idx=0,#t-1 do ${varI}=(${varI}+1)%256;${varJ}=(${varJ}+${varS}[${varI}])%256;${varS}[${varI}],${varS}[${varJ}]=${varS}[${varJ}],${varS}[${varI}];buffer.writeu8(${varBuf},idx,bit32.bxor(t[idx+1],${varS}[(${varS}[${varI}]+${varS}[${varJ}])%256]));end;local ${varFn},${varErr}=${varLoad}(buffer.tostring(${varBuf}));if not ${varFn} then error("[ZProtector Chaos]: "..tostring(${varErr})) end;return ${varFn}();`;
+        // Escapar caracteres especiales para la expresión regular de Luau
+        const regexTagOpen = tagOpen.replace(/[\.\(\)\[\]\^\$\%\+\-\*\?\=]/g, "%%%1");
+        const regexTagClose = tagClose.replace(/[\.\(\)\[\]\^\$\%\+\-\*\?\=]/g, "%%%1");
+        
+        // Patrón dinámico de extracción en Luau
+        const luauRegex = `${regexTagOpen}%s*(0x%x+|%d+)%s*${regexTagClose}`;
 
-        return res.status(200).json({ 
-            success: true, 
-            obfuscatedCode: payload 
+        // 6. Payload con Unpacker de Bytecode Protegido y Anti-Hooking Guard
+        const payload = `local ${varCheck}=getgenv or function() return _G end;if not game then error() end;local ${varLoad}=${varCheck}().loadstring or loadstring;local ${varOffset}=${offsetMath};local ${varPattern}="${luauRegex}";local ${varData}={${chunks.join(",")}};local ${varKey}={${keyBytes.join(",")}};local t={};for _,${varId} in ipairs(${varData}) do for n in ${varId}:gmatch(${varPattern}) do t[#t+1]=tonumber(n)-${varOffset} end end;local ${varS}={};for i=0,255 do ${varS}[i]=i end;local ${varJ}=0;for i=0,255 do ${varJ}=(${varJ}+${varS}[i]+${varKey}[(i%#${varKey})+1])%256;${varS}[i],${varS}[${varJ}]=${varS}[${varJ}],${varS}[i] end;local ${varBuf}=buffer.create(#t);local ${varI},${varJ}=0,0;for idx=0,#t-1 do ${varI}=(${varI}+1)%256;${varJ}=(${varJ}+${varS}[${varI}])%256;${varS}[${varI}],${varS}[${varJ}]=${varS}[${varJ}],${varS}[${varI}];buffer.writeu8(${varBuf},idx,bit32.bxor(t[idx+1],${varS}[(${varS}[${varI}]+${varS}[${varJ}])%256]));end;local ${varFn},${varErr}=${varLoad}(buffer.tostring(${varBuf}));if not ${varFn} then error("[Z-Chaos Engine]: "..tostring(${varErr})) end;return ${varFn}();`;
+
+        return res.status(200).json({
+            success: true,
+            obfuscatedCode: payload
         });
 
     } catch (err) {
-        return res.status(500).json({ error: 'Error en el motor Z-Protector V18.5: ' + err.message });
+        return res.status(500).json({ error: 'Error en el motor Z-Protector V19.0: ' + err.message });
     }
 }
