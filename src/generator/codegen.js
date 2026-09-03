@@ -14,25 +14,21 @@ class CodeGenerator {
             ? rawLuaCode 
             : (rawLuaCode && rawLuaCode.source) || 'print("Z-Protector Loaded")';
 
-        // 1. Clave de símbolos base
         const symbolKey = "/.;,['\\]=-0987654321//?";
-        let currentKeyState = 0x5A; // Semilla inicial dinámica
+        let currentKeyState = 0x5A;
         const encryptedBytes = [];
 
-        // 2. Cifrado con Rolling Key + Operación Aritmética Dinámica
+        // Cifrado Rolling Key
         for (let i = 0; i < codeToObfuscate.length; i++) {
             const charCode = codeToObfuscate.charCodeAt(i);
             const keyByte = symbolKey.charCodeAt(i % symbolKey.length);
             
-            // Cifrado triple: Char ^ Key ^ EstadoMutante
             const cipherByte = (charCode ^ keyByte ^ currentKeyState) & 0xFF;
             encryptedBytes.push(cipherByte);
 
-            // La clave muta dinámicamente con cada byte procesado
             currentKeyState = (currentKeyState * 33 + cipherByte + keyByte) & 0xFF;
         }
 
-        // Identificadores aleatorios
         const vEnv = generateRandomVarName();
         const vKey = generateRandomVarName();
         const vData = generateRandomVarName();
@@ -43,6 +39,7 @@ class CodeGenerator {
         const vK = generateRandomVarName();
         const vFn = generateRandomVarName();
         const vCheck = generateRandomVarName();
+        const vBxor = generateRandomVarName();
 
         const keyCharCodes = symbolKey
             .split('')
@@ -51,11 +48,9 @@ class CodeGenerator {
 
         const bytesFormatted = `{${encryptedBytes.join(',')}}`;
 
-        // 3. Payload para Roblox con Anti-Hook y Desencriptación Mutante
         return `--// Z-Protector Heavy Rolling-Cipher Engine
 local ${vEnv} = getfenv and getfenv() or _ENV or {}
 
--- Detección Anti-Hook (Invalida ganchos en loadstring / table.concat)
 local ${vCheck} = function(f)
     if typeof(f) ~= "function" then return false end
     local info = debug and debug.getinfo and debug.getinfo(f)
@@ -66,22 +61,20 @@ local ${vKey} = ${keyCharCodes}
 local ${vData} = ${bytesFormatted}
 local ${vOut} = {}
 local ${vState} = 0x5A
+local ${vBxor} = (${vEnv}.bit32 and ${vEnv}.bit32.bxor) or bxor
 
 for ${vI} = 1, #${vData} do
     local ${vK} = string.byte(${vKey}, ((${vI} - 1) % #${vKey}) + 1)
     local ${vB} = ${vData}[${vI}]
     
-    -- Desencriptación con estado mutante
-    local _dec = bit32 and bit32.bxor(${vB}, ${vK}, ${vState}) or (${vB} ~ ${vK} ~ ${vState})
+    local _dec = ${vBxor}(${vB}, ${vK}, ${vState})
     ${vOut}[${vI}] = string.char(_dec)
     
-    -- Mutación de estado para sincronizar la clave del siguiente byte
     ${vState} = (${vState} * 33 + ${vB} + ${vK}) % 256
 end
 
 local ${vFn} = loadstring or ${vEnv}.loadstring
 if ${vCheck} and not ${vCheck}(${vFn}) then
-    -- Si detecta un hook en loadstring, rompe la ejecución silenciosamente
     return function() end
 end
 
