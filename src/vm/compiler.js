@@ -48,7 +48,7 @@ class BytecodeCompiler {
             return currentReg;
         }
 
-        // 4. Llamadas a función
+        // 4. Llamadas a función estándar (foo())
         if (node.type === 'CallStatement') {
             return this.compileNode(node.expression, currentReg);
         }
@@ -64,6 +64,30 @@ class BytecodeCompiler {
             }
 
             this.instructions.push(['CALL', funcReg, args.length + 1, 1]);
+            return funcReg;
+        }
+
+        // 4b. Llamadas a método con dos puntos (game:GetService("..."))
+        if (node.type === 'SendExpression') {
+            const funcReg = currentReg;
+            const selfReg = currentReg + 1;
+
+            // Evaluar el objeto base (ej: game) en selfReg
+            this.compileNode(node.base, selfReg);
+
+            // Obtener el método (ej: GetService) en funcReg
+            const methodKey = node.method ? node.method.name : 'method';
+            const keyIdx = this.addConstant(methodKey);
+            this.instructions.push(['GETTABLE', funcReg, selfReg, keyIdx]);
+
+            // Evaluar argumentos después de self
+            const args = node.arguments || [];
+            for (let i = 0; i < args.length; i++) {
+                this.compileNode(args[i], selfReg + 1 + i);
+            }
+
+            // Llamar pasando self + argumentos
+            this.instructions.push(['CALL', funcReg, args.length + 2, 1]);
             return funcReg;
         }
 
