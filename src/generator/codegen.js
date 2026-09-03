@@ -1,4 +1,5 @@
-function generateRandomVarName(length = 15) {
+// Generador de nombres de variables válidos para el entorno de Luau
+function generateRandomVarName(length = 16) {
     const firstChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_';
     const allChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
     let result = firstChars[Math.floor(Math.random() * firstChars.length)];
@@ -9,48 +10,55 @@ function generateRandomVarName(length = 15) {
 }
 
 class CodeGenerator {
-    generate(vmData) {
+    generate(rawLuaCode) {
+        // Asegurar que recibimos el string del script
+        const codeToObfuscate = typeof rawLuaCode === 'string' 
+            ? rawLuaCode 
+            : (rawLuaCode && rawLuaCode.source) || 'print("Z-Protector Loaded")';
+
+        // Clave de cifrado basada en tu set de símbolos
+        const symbolKey = "/.;,['\\]=-0987654321//?";
+        
+        // Cifrado XOR del script completo
+        const encryptedBytes = [];
+        for (let i = 0; i < codeToObfuscate.length; i++) {
+            const charCode = codeToObfuscate.charCodeAt(i);
+            const keyCode = symbolKey.charCodeAt(i % symbolKey.length);
+            encryptedBytes.push(charCode ^ keyCode);
+        }
+
+        // Crear nombres aleatorios para el runtime
         const varEnv = generateRandomVarName();
-        const varBytecode = generateRandomVarName();
+        const varData = generateRandomVarName();
+        const varKey = generateRandomVarName();
+        const varResult = generateRandomVarName();
         const varIndex = generateRandomVarName();
-        const varInst = generateRandomVarName();
-        const varFn = generateRandomVarName();
+        const varLoad = generateRandomVarName();
 
-        const bytecodeArr = (vmData && vmData.bytecode) ? vmData.bytecode : [];
-        const stringEntries = (vmData && vmData.stringTable) ? vmData.stringTable : [];
+        // Convertir la clave de símbolos a bytes string.char
+        const keyCharCodes = symbolKey
+            .split('')
+            .map(c => `string.char(${c.charCodeAt(0)})`)
+            .join('..');
 
-        // Generar decodificación de strings escapando la clave de forma segura
-        let stringDecoderCode = '';
-        stringEntries.forEach(([key, val]) => {
-            const charCodes = String(val)
-                .split('')
-                .map(c => `string.char(${c.charCodeAt(0)})`)
-                .join('..');
-            const safeKey = JSON.stringify(key);
-            stringDecoderCode += `${varEnv}[${safeKey}] = ${charCodes || '""'}\n`;
-        });
+        // Formatear los bytes cifrados en tabla de Luau
+        const bytesFormatted = `{${encryptedBytes.join(',')}}`;
 
-        const formattedBytecode = JSON.stringify(bytecodeArr)
-            .replace(/\[/g, '{')
-            .replace(/\]/g, '}');
-
-        return `--// Z-Protector Custom VM Engine (Luau Compatible)
+        // Generar script ofuscado final para Roblox
+        return `--// Z-Protector Heavy Obfuscator Engine (Luau 3000+ Lines Compatible)
 local ${varEnv} = getfenv and getfenv() or _ENV or {}
+local ${varKey} = ${keyCharCodes}
+local ${varData} = ${bytesFormatted}
+local ${varResult} = {}
 
-${stringDecoderCode}
-local ${varBytecode} = ${formattedBytecode}
-local ${varIndex} = 1
+for ${varIndex} = 1, #${varData} do
+    local _k = string.byte(${varKey}, ((${varIndex} - 1) % #${varKey}) + 1)
+    local _b = ${varEnv}.bit32 and ${varEnv}.bit32.bxor(${varData}[${varIndex}], _k) or (${varData}[${varIndex}] ~ _k)
+    ${varResult}[${varIndex}] = string.char(_b)
+end
 
-while ${varIndex} <= #${varBytecode} do
-    local ${varInst} = ${varBytecode}[${varIndex}]
-    if ${varInst}[1] == 1 then
-        ${varEnv}[${varInst}[2]] = ${varInst}[3]
-    elseif ${varInst}[1] == 2 then
-        local ${varFn} = ${varEnv}[${varInst}[2]] or print
-        ${varFn}(${varEnv}[${varInst}[3]] or ${varInst}[3])
-    end
-    ${varIndex} = ${varIndex} + 1
-end`;
+local ${varLoad} = assert(loadstring or ${varEnv}.loadstring)(table.concat(${varResult}))
+return ${varLoad}()`;
     }
 }
 
