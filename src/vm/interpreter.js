@@ -1,33 +1,20 @@
-const { generate15Junk } = require('../transforms/renameVars');
+function generateRandomVarName(length = 15) {
+    const firstChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_';
+    const allChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
+    let result = firstChars[Math.floor(Math.random() * firstChars.length)];
+    for (let i = 1; i < length; i++) {
+        result += allChars[Math.floor(Math.random() * allChars.length)];
+    }
+    return result;
+}
 
 class VMInterpreterGenerator {
     generate(bytecode, stringTable) {
-        const envVar = generate15Junk();
-        const bcVar = generate15Junk();
-        const pcVar = generate15Junk();
-
-        let strTableSetup = "";
-        stringTable.forEach((codes, key) => {
-            const decoded = codes.map(c => `string.char(${c - 7})`).join('..');
-            strTableSetup += `_E["${key}"] = ${decoded || '""'}\n`;
-        });
-
-        return `
-local _E = getfenv and getfenv() or _ENV or {}
-${strTableSetup}
-local ${bcVar} = ${JSON.stringify(bytecode)}
-local ${pcVar} = 1
-while ${pcVar} <= #${bcVar} do
-    local inst = ${bcVar}[${pcVar}]
-    if inst[1] == 1 then
-        _E[inst[2]] = inst[3]
-    elseif inst[1] == 2 then
-        local fn = _E[inst[2]] or print
-        fn(_E["${Array.from(stringTable.keys())[0] || ''}"])
-    end
-    ${pcVar} = ${pcVar} + 1
-end
-        `.trim();
+        // Devuelve un objeto estructurado limpio en lugar de un string de código plano
+        return {
+            bytecode: bytecode || [],
+            stringTable: stringTable ? Array.from(stringTable.entries()) : []
+        };
     }
 }
 
