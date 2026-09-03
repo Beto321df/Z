@@ -9,36 +9,21 @@ class CodeGenerator {
             ? rawLuaCode 
             : (rawLuaCode && rawLuaCode.source) || 'print("Z-Protector VM Active")';
 
+        // 1. Tokenizar el código fuente
+        const tokenizer = new Tokenizer(source);
+        const tokens = tokenizer.tokenize();
+
+        // 2. Crear Árbol AST
+        const parser = new Parser(tokens);
+        const ast = parser.parse();
+
+        // 3. Compilar AST a Opcodes puros de VM
+        const compiler = new BytecodeCompiler();
+        const bytecode = compiler.compile(ast);
+
+        // 4. Generar la VM Luraph con CFF y Opcodes Aleatorios
         const vmGenerator = new LuauInterpreterGenerator();
-
-        try {
-            const tokenizer = new Tokenizer(source);
-            const tokens = tokenizer.tokenize();
-
-            const parser = new Parser(tokens);
-            const ast = parser.parse();
-
-            const compiler = new BytecodeCompiler();
-            const bytecode = compiler.compile(ast);
-
-            if (bytecode && bytecode.instructions && bytecode.instructions.length > 0) {
-                return vmGenerator.generateRunner(bytecode);
-            }
-        } catch (err) {
-            // Si el parser falla en scripts de 2000+ líneas, pasa al flujo VM
-        }
-
-        // Flujo de ejecución VM con constantes estructuradas
-        return vmGenerator.generateRunner({
-            constants: ["loadstring", source],
-            instructions: [
-                [3, 1, 1, 0], // GETGLOBAL 'loadstring' -> _0xR[1]
-                [2, 2, 2, 0], // LOADK source -> _0xR[2]
-                [8, 1, 2, 2], // CALL loadstring(source) -> _0xR[1] = chunk
-                [8, 1, 1, 1], // CALL chunk()
-                [9, 0, 1, 0]  // RETURN
-            ]
-        });
+        return vmGenerator.generateRunner(bytecode);
     }
 }
 
