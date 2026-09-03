@@ -1,101 +1,114 @@
-// Codifica strings a bytes escapados (\112\114\105...) para ocultar el texto
-function encodeLuaString(str) {
-    if (typeof str !== 'string') return String(str);
-    let bytes = [];
+// Función para codificar constantes en cadenas de bytes escapados
+function stringToLuaBytes(str) {
+    let result = '';
     for (let i = 0; i < str.length; i++) {
-        bytes.push('\\' + str.charCodeAt(i));
+        result += '\\' + str.charCodeAt(i);
     }
-    return '"' + bytes.join('') + '"';
-}
-
-// Convierte las estructuras de JS a Tablas de Luau con Opcodes Numéricos
-function toObfuscatedLuaTable(data) {
-    if (data === null || data === undefined) return 'nil';
-    if (typeof data === 'boolean' || typeof data === 'number') return String(data);
-    if (typeof data === 'string') return encodeLuaString(data);
-
-    if (Array.isArray(data)) {
-        return '{' + data.map(toObfuscatedLuaTable).join(',') + '}';
-    }
-
-    if (typeof data === 'object') {
-        // Mapeo de Opcodes a Números
-        let opCode = 0;
-        let p1 = 0;
-        let p2 = 0;
-
-        if (data.op === 'GETGLOBAL') {
-            opCode = 31;
-            p1 = data.reg || 1;
-            p2 = encodeLuaString(data.name || '');
-        } else if (data.op === 'LOADK' || data.op === 'LOADCONST') {
-            opCode = 42;
-            p1 = data.reg || 1;
-            p2 = typeof data.val === 'string' ? encodeLuaString(data.val) : (data.val || 0);
-        } else if (data.op === 'CALL') {
-            opCode = 89;
-            p1 = data.func || 1;
-            p2 = data.args || 0;
-        } else if (data.op === 'SETGLOBAL') {
-            opCode = 63;
-            p1 = encodeLuaString(data.name || '');
-            p2 = data.reg || 1;
-        } else {
-            opCode = typeof data.op === 'number' ? data.op : 10;
-            p1 = data.reg || data[2] || 0;
-            p2 = data.val || data.name || data[3] || 0;
-            if (typeof p2 === 'string') p2 = encodeLuaString(p2);
-        }
-
-        return '{' + opCode + ',' + p1 + ',' + p2 + '}';
-    }
-
-    return String(data);
+    return '"' + result + '"';
 }
 
 class LuauInterpreterGenerator {
     generateRunner(bytecode) {
-        const luaBytecode = toObfuscatedLuaTable(bytecode);
+        // Estructura de Bytecode estilo Luraph:
+        // [1] Tabla de Constantes (_K)
+        // [2] Tabla de Instrucciones (_I)
+        
+        const constants = bytecode.constants || [];
+        const instructions = bytecode.instructions || bytecode;
 
-        // VM con variables ofuscadas (_0x...) compatible con Luau
-        return `local _0x1a = ${luaBytecode}
+        // Formatear tabla de constantes a sintaxis Lua
+        const formattedConstants = '{' + constants.map(c => {
+            if (typeof c === 'string') return stringToLuaBytes(c);
+            if (c === null || c === undefined) return 'nil';
+            return String(c);
+        }).join(',') + '}';
 
-local function _0x8b(_0x2c)
-    if not _0x2c then return end
-    local _0x3f = 1
-    local _0x4e = {}
-    local _0x5a = getfenv and getfenv() or _ENV
+        // Formatear instrucciones [OpCode, A, B, C]
+        const formattedInstructions = '{' + (Array.isArray(instructions) ? instructions.map(inst => {
+            if (Array.isArray(inst)) return '{' + inst.join(',') + '}';
+            if (typeof inst === 'object') {
+                return '{' + (inst.op || 0) + ',' + (inst.a || 0) + ',' + (inst.b || 0) + ',' + (inst.c || 0) + '}';
+            }
+            return '{0,0,0,0}';
+        }).join(',') : '') + '}';
+
+        // Bucle de la Máquina Virtual (VM Runner estilo Luraph)
+        return `local _0xK = ${formattedConstants}
+local _0xI = ${formattedInstructions}
+
+local function _0xVM(_0xInst, _0xConst)
+    local _0xPC = 1
+    local _0xR = {}
+    local _0xE = getfenv and getfenv() or _ENV
     
-    while _0x3f <= #_0x2c do
-        local _0x6d = _0x2c[_0x3f]
-        if not _0x6d then break end
+    while true do
+        local _0xC = _0xInst[_0xPC]
+        if not _0xC then break end
         
-        local _0x7e = _0x6d[1]
+        local _0xOP = _0xC[1]
+        local _0xA  = _0xC[2]
+        local _0xB  = _0xC[3]
+        local _0xC_ = _0xC[4]
         
-        if _0x7e == 31 then
-            _0x4e[_0x6d[2]] = _0x5a[_0x6d[3]]
-        elseif _0x7e == 42 then
-            _0x4e[_0x6d[2]] = _0x6d[3]
-        elseif _0x7e == 89 then
-            local _0x8f = _0x6d[2]
-            local _0x9a = _0x6d[3] or 0
-            local _0x0b = {}
-            for _0x1c = 1, _0x9a do
-                table.insert(_0x0b, _0x4e[_0x8f + _0x1c])
+        -- Mapping de Opcodes estilo Luraph
+        if _0xOP == 1 then -- MOVE: Stack[A] = Stack[B]
+            _0xR[_0xA] = _0xR[_0xB]
+
+        elseif _0xOP == 2 then -- LOADK: Stack[A] = Const[B]
+            _0xR[_0xA] = _0xConst[_0xB]
+
+        elseif _0xOP == 3 then -- GETGLOBAL: Stack[A] = Env[Const[B]]
+            _0xR[_0xA] = _0xE[_0xConst[_0xB]]
+
+        elseif _0xOP == 4 then -- SETGLOBAL: Env[Const[B]] = Stack[A]
+            _0xE[_0xConst[_0xB]] = _0xR[_0xA]
+
+        elseif _0xOP == 5 then -- GETTABLE: Stack[A] = Stack[B][Const[C] or Stack[C]]
+            local _0xKey = type(_0xC_) == "number" and _0xConst[_0xC_] or _0xR[_0xC_]
+            _0xR[_0xA] = _0xR[_0xB][_0xKey]
+
+        elseif _0xOP == 6 then -- SETTABLE: Stack[A][Key] = Stack[C]
+            local _0xKey = type(_0xB) == "number" and _0xConst[_0xB] or _0xR[_0xB]
+            local _0xVal = type(_0xC_) == "number" and _0xConst[_0xC_] or _0xR[_0xC_]
+            _0xR[_0xA][_0xKey] = _0xVal
+
+        elseif _0xOP == 7 then -- NEWTABLE: Stack[A] = {}
+            _0xR[_0xA] = {}
+
+        elseif _0xOP == 8 then -- CALL: Exec Stack[A]
+            local _0xFunc = _0xR[_0xA]
+            if type(_0xFunc) == "function" then
+                local _0xArgs = {}
+                if _0xB > 1 then
+                    for _0xi = 1, _0xB - 1 do
+                        table.insert(_0xArgs, _0xR[_0xA + _0xi])
+                    end
+                end
+                local _0xRes = {_0xFunc(unpack(_0xArgs))}
+                if _0xC_ > 1 then
+                    for _0xi = 1, _0xC_ - 1 do
+                        _0xR[_0xA + _0xi - 1] = _0xRes[_0xi]
+                    end
+                end
             end
-            local _0x2d = _0x4e[_0x8f]
-            if type(_0x2d) == "function" then
-                _0x2d(unpack(_0x0b))
+
+        elseif _0xOP == 9 then -- RETURN: Retorna valores
+            if _0xB == 1 then return end
+            local _0xRet = {}
+            for _0xi = _0xA, _0xA + _0xB - 2 do
+                table.insert(_0xRet, _0xR[_0xi])
             end
-        elseif _0x7e == 63 then
-            _0x5a[_0x6d[2]] = _0x4e[_0x6d[3]]
+            return unpack(_0xRet)
+
+        elseif _0xOP == 10 then -- JMP: Salto relativo de PC
+            _0xPC = _0xPC + _0xA
         end
         
-        _0x3f = _0x3f + 1
+        _0xPC = _0xPC + 1
     end
 end
 
-_0x8b(_0x1a)`;
+return _0xVM(_0xI, _0xK)`;
     }
 }
 
