@@ -1,13 +1,27 @@
-const Tokenizer = require('../src/lexer/tokenizer');
-const Parser = require('../src/parser/parser');
-const StringEncoderTransform = require('../src/transforms/stringEncoder');
-const DeadCodeTransform = require('../src/transforms/deadCode');
-const VMCompiler = require('../src/vm/compiler');
-const VMInterpreterGenerator = require('../src/vm/interpreter');
-const CodeGenerator = require('../src/generator/codegen');
+// Importación robusta de módulos (soporta module.exports = Clase o module.exports = { Clase })
+let Tokenizer = require('../src/lexer/tokenizer');
+Tokenizer = Tokenizer.Tokenizer || Tokenizer.default || Tokenizer;
+
+let Parser = require('../src/parser/parser');
+Parser = Parser.Parser || Parser.default || Parser;
+
+let StringEncoderTransform = require('../src/transforms/stringEncoder');
+StringEncoderTransform = StringEncoderTransform.StringEncoderTransform || StringEncoderTransform.default || StringEncoderTransform;
+
+let DeadCodeTransform = require('../src/transforms/deadCode');
+DeadCodeTransform = DeadCodeTransform.DeadCodeTransform || DeadCodeTransform.default || DeadCodeTransform;
+
+let VMCompiler = require('../src/vm/compiler');
+VMCompiler = VMCompiler.VMCompiler || VMCompiler.default || VMCompiler;
+
+let VMInterpreterGenerator = require('../src/vm/interpreter');
+VMInterpreterGenerator = VMInterpreterGenerator.VMInterpreterGenerator || VMInterpreterGenerator.default || VMInterpreterGenerator;
+
+let CodeGenerator = require('../src/generator/codegen');
+CodeGenerator = CodeGenerator.CodeGenerator || CodeGenerator.default || CodeGenerator;
 
 module.exports = async (req, res) => {
-    // Encabezados para permitir CORS en cualquier origen
+    // Encabezados CORS
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -16,7 +30,6 @@ module.exports = async (req, res) => {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
-    // Responder solicitudes de verificación Preflight
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -26,7 +39,6 @@ module.exports = async (req, res) => {
     }
 
     try {
-        // Extraer 'code' de forma segura
         let code = null;
         if (req.body) {
             if (typeof req.body === 'string') {
