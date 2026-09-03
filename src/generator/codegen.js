@@ -23,7 +23,18 @@ class CodeGenerator {
 
         // 4. Generación de intérprete VM
         const vmGenerator = new LuauInterpreterGenerator();
-        return vmGenerator.generateRunner(bytecode);
+        let runnerCode = vmGenerator.generateRunner(bytecode);
+
+        // LIMS: Garantizar que no empiece con corchetes sueltos o tablas no asignadas
+        // Si el intérprete devuelve sólo la estructura/tabla, la asignamos correctamente.
+        if (typeof runnerCode === 'string') {
+            runnerCode = runnerCode.trim();
+            if (runnerCode.startsWith('[') || runnerCode.startsWith('{')) {
+                runnerCode = `;(function()\n local _bytecode = ${runnerCode};\n return _bytecode;\n})();`;
+            }
+        }
+
+        return runnerCode;
     }
 }
 
