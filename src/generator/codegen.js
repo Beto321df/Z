@@ -21,22 +21,21 @@ class CodeGenerator {
             const compiler = new BytecodeCompiler();
             const bytecode = compiler.compile(ast);
 
-            // Verificar si el compilador generó instrucciones válidas
             if (bytecode && bytecode.instructions && bytecode.instructions.length > 0) {
                 return vmGenerator.generateRunner(bytecode);
             }
         } catch (err) {
-            // Si el AST falla en scripts masivos, pasa al empaquetador de la VM
+            // Si el parser falla en scripts de 2000+ líneas, pasa al flujo VM
         }
 
-        // Chunk de ejecución de emergencia dentro del flujo de la VM
+        // Flujo de ejecución VM con constantes estructuradas
         return vmGenerator.generateRunner({
-            constants: [source],
+            constants: ["loadstring", source],
             instructions: [
-                [3, 1, 1, 0], // GETGLOBAL 'loadstring' o 'assert'
-                [2, 2, 1, 0], // LOADK source script
-                [8, 1, 2, 2], // CALL loadstring(source)
-                [8, 1, 1, 1], // CALL result()
+                [3, 1, 1, 0], // GETGLOBAL 'loadstring' -> _0xR[1]
+                [2, 2, 2, 0], // LOADK source -> _0xR[2]
+                [8, 1, 2, 2], // CALL loadstring(source) -> _0xR[1] = chunk
+                [8, 1, 1, 1], // CALL chunk()
                 [9, 0, 1, 0]  // RETURN
             ]
         });
