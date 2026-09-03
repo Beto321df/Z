@@ -1,4 +1,3 @@
-// Palabras reservadas de Luau que la VM debe ignorar
 const RESERVED_KEYWORDS = new Set([
     'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for',
     'function', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat',
@@ -8,13 +7,10 @@ const RESERVED_KEYWORDS = new Set([
 function randName() {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
     let name = '';
-    
-    // Genera un nombre de 2 letras y reintenta si coincide con una palabra reservada
     do {
         name = chars[Math.floor(Math.random() * chars.length)] + 
                chars[Math.floor(Math.random() * chars.length)];
     } while (RESERVED_KEYWORDS.has(name));
-
     return name;
 }
 
@@ -124,18 +120,21 @@ local function ${v_VM}(${v_Inst}, ${v_K})
             ${v_R}[${v_A}] = ${v_K}[${v_B}]
 
         elseif (${v_OP} == ${OP_MAP['GETGLOBAL']}) then
-            ${v_R}[${v_A}] = ${v_E}[${v_K}[${v_B}]]
+            local gName = ${v_K}[${v_B}]
+            ${v_R}[${v_A}] = ${v_E}[gName] or (_G and _G[gName]) or (getgenv and getgenv()[gName])
 
         elseif (${v_OP} == ${OP_MAP['SETGLOBAL']}) then
-            ${v_E}[${v_K}[${v_B}]] = ${v_R}[${v_A}]
+            local gName = ${v_K}[${v_B}]
+            ${v_E}[gName] = ${v_R}[${v_A}]
+            if _G then _G[gName] = ${v_R}[${v_A}] end
 
         elseif (${v_OP} == ${OP_MAP['GETTABLE']}) then
-            local key = type(${v_C}) == "number" and ${v_K}[${v_C}] or ${v_R}[${v_C}]
+            local key = ${v_K}[${v_C}] ~= nil and ${v_K}[${v_C}] or ${v_R}[${v_C}]
             ${v_R}[${v_A}] = ${v_R}[${v_B}][key]
 
         elseif (${v_OP} == ${OP_MAP['SETTABLE']}) then
-            local key = type(${v_B}) == "number" and ${v_K}[${v_B}] or ${v_R}[${v_B}]
-            local val = type(${v_C}) == "number" and ${v_K}[${v_C}] or ${v_R}[${v_C}]
+            local key = ${v_K}[${v_B}] ~= nil and ${v_K}[${v_B}] or ${v_R}[${v_B}]
+            local val = ${v_K}[${v_C}] ~= nil and ${v_K}[${v_C}] or ${v_R}[${v_C}]
             ${v_R}[${v_A}][key] = val
 
         elseif (${v_OP} == ${OP_MAP['NEWTABLE']}) then
