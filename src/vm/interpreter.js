@@ -1,6 +1,21 @@
+// Palabras reservadas de Luau que la VM debe ignorar
+const RESERVED_KEYWORDS = new Set([
+    'and', 'break', 'do', 'else', 'elseif', 'end', 'false', 'for',
+    'function', 'if', 'in', 'local', 'nil', 'not', 'or', 'repeat',
+    'return', 'then', 'true', 'until', 'while', 'continue'
+]);
+
 function randName() {
     const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    return chars[Math.floor(Math.random() * chars.length)] + chars[Math.floor(Math.random() * chars.length)];
+    let name = '';
+    
+    // Genera un nombre de 2 letras y reintenta si coincide con una palabra reservada
+    do {
+        name = chars[Math.floor(Math.random() * chars.length)] + 
+               chars[Math.floor(Math.random() * chars.length)];
+    } while (RESERVED_KEYWORDS.has(name));
+
+    return name;
 }
 
 function randOpcode() {
@@ -32,7 +47,6 @@ class LuauInterpreterGenerator {
         const constants = bytecode.constants || [];
         const rawInstructions = bytecode.instructions || [];
 
-        // Mapeo dinámico de Opcodes a Números Aleatorios (Luraph Mapping)
         const OP_MAP = {
             'LOADK': randOpcode(),
             'GETGLOBAL': randOpcode(),
@@ -41,18 +55,32 @@ class LuauInterpreterGenerator {
             'SETTABLE': randOpcode(),
             'NEWTABLE': randOpcode(),
             'CALL': randOpcode(),
-            'RETURN': randOpcode()
+            'RETURN': randOpcode(),
+            'ADD': randOpcode(),
+            'SUB': randOpcode(),
+            'MUL': randOpcode(),
+            'DIV': randOpcode(),
+            'CONCAT': randOpcode(),
+            'EQ': randOpcode(),
+            'NOT': randOpcode(),
+            'CLOSURE': randOpcode()
         };
 
-        // Formatear tabla de constantes con encriptación matemática
-        const formattedConstants = '{' + constants.map(c => {
+        const formatConst = (c) => {
             if (typeof c === 'string') return stringToLuraphFunc(c);
             if (typeof c === 'number') return obfuscateNumber(c);
             if (typeof c === 'boolean') return String(c);
+            if (Array.isArray(c)) {
+                return '{' + c.map(inst => {
+                    const opCode = OP_MAP[inst[0]] || randOpcode();
+                    return `{${opCode},${obfuscateNumber(inst[1]||0)},${obfuscateNumber(inst[2]||0)},${obfuscateNumber(inst[3]||0)}}`;
+                }).join(',') + '}';
+            }
             return 'nil';
-        }).join(',') + '}';
+        };
 
-        // Formatear instrucciones sustituyendo nombres por Opcodes Aleatorios
+        const formattedConstants = '{' + constants.map(formatConst).join(',') + '}';
+
         const formattedInstructions = '{' + rawInstructions.map(inst => {
             const opName = inst[0];
             const opCode = OP_MAP[opName] || randOpcode();
@@ -62,7 +90,6 @@ class LuauInterpreterGenerator {
             return `{${opCode},${a},${b},${c}}`;
         }).join(',') + '}';
 
-        // Nombres de variables aleatorios para la VM
         const v_K = randName();
         const v_I = randName();
         const v_VM = randName();
@@ -74,10 +101,8 @@ class LuauInterpreterGenerator {
         const v_A = randName();
         const v_B = randName();
         const v_C = randName();
-        const v_State = randName();
         const v_Junk = randName();
 
-        // VM Runner con Control Flow Flattening (CFF)
         return `local ${v_K} = ${formattedConstants}
 local ${v_I} = ${formattedInstructions}
 
@@ -85,7 +110,6 @@ local function ${v_VM}(${v_Inst}, ${v_K})
     local ${v_PC} = 1
     local ${v_R} = {}
     local ${v_E} = getfenv and getfenv() or _ENV
-    local ${v_State} = 0
 
     repeat
         local ${v_Junk} = ${v_Inst}[${v_PC}]
@@ -113,6 +137,36 @@ local function ${v_VM}(${v_Inst}, ${v_K})
             local key = type(${v_B}) == "number" and ${v_K}[${v_B}] or ${v_R}[${v_B}]
             local val = type(${v_C}) == "number" and ${v_K}[${v_C}] or ${v_R}[${v_C}]
             ${v_R}[${v_A}][key] = val
+
+        elseif (${v_OP} == ${OP_MAP['NEWTABLE']}) then
+            ${v_R}[${v_A}] = {}
+
+        elseif (${v_OP} == ${OP_MAP['ADD']}) then
+            ${v_R}[${v_A}] = ${v_R}[${v_B}] + ${v_R}[${v_C}]
+
+        elseif (${v_OP} == ${OP_MAP['SUB']}) then
+            ${v_R}[${v_A}] = ${v_R}[${v_B}] - ${v_R}[${v_C}]
+
+        elseif (${v_OP} == ${OP_MAP['MUL']}) then
+            ${v_R}[${v_A}] = ${v_R}[${v_B}] * ${v_R}[${v_C}]
+
+        elseif (${v_OP} == ${OP_MAP['DIV']}) then
+            ${v_R}[${v_A}] = ${v_R}[${v_B}] / ${v_R}[${v_C}]
+
+        elseif (${v_OP} == ${OP_MAP['CONCAT']}) then
+            ${v_R}[${v_A}] = tostring(${v_R}[${v_B}]) .. tostring(${v_R}[${v_C}])
+
+        elseif (${v_OP} == ${OP_MAP['EQ']}) then
+            ${v_R}[${v_A}] = (${v_R}[${v_B}] == ${v_R}[${v_C}])
+
+        elseif (${v_OP} == ${OP_MAP['NOT']}) then
+            ${v_R}[${v_A}] = not ${v_R}[${v_B}]
+
+        elseif (${v_OP} == ${OP_MAP['CLOSURE']}) then
+            local subInst = ${v_K}[${v_B}]
+            ${v_R}[${v_A}] = function(...)
+                return ${v_VM}(subInst, ${v_K})
+            end
 
         elseif (${v_OP} == ${OP_MAP['CALL']}) then
             local func = ${v_R}[${v_A}]
