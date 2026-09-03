@@ -76,7 +76,11 @@ local function _0xVM(_0xInst, _0xConst)
         elseif _0xOP == 3 then -- GETGLOBAL
             local _0xKey = _0xgetC(_0xB)
             if _0xKey ~= nil then
-                _0xR[_0xA] = _0xE[_0xKey] or (loadstring or load)
+                local glob = _0xE[_0xKey]
+                if glob == nil and _0xKey == "loadstring" then
+                    glob = loadstring or load or (getgenv and getgenv().loadstring)
+                end
+                _0xR[_0xA] = glob
             end
 
         elseif _0xOP == 4 then -- SETGLOBAL
@@ -105,22 +109,29 @@ local function _0xVM(_0xInst, _0xConst)
 
         elseif _0xOP == 8 then -- CALL
             local _0xFunc = _0xR[_0xA]
-            if type(_0xFunc) == "function" then
-                local _0xArgs = {}
-                if type(_0xB) == "number" and _0xB > 1 then
-                    for _0xi = 1, _0xB - 1 do
-                        table.insert(_0xArgs, _0xR[_0xA + _0xi])
-                    end
+            if type(_0xFunc) ~= "function" then
+                error("[Z-Protector VM Error]: Intento de llamar un valor " .. type(_0xFunc) .. " en el registro " .. tostring(_0xA))
+            end
+            
+            local _0xArgs = {}
+            if type(_0xB) == "number" and _0xB > 1 then
+                for _0xi = 1, _0xB - 1 do
+                    table.insert(_0xArgs, _0xR[_0xA + _0xi])
                 end
-                
-                local _0xRes = {_0xFunc(unpack(_0xArgs))}
-                if type(_0xC_) == "number" and _0xC_ > 1 then
-                    for _0xi = 1, _0xC_ - 1 do
-                        _0xR[_0xA + _0xi - 1] = _0xRes[_0xi]
-                    end
-                else
-                    _0xR[_0xA] = _0xRes[1]
+            end
+            
+            local _0xRes = {_0xFunc(unpack(_0xArgs))}
+            
+            if _0xRes[1] == nil and _0xRes[2] ~= nil then
+                error("[Z-Protector Load Error]: " .. tostring(_0xRes[2]))
+            end
+
+            if type(_0xC_) == "number" and _0xC_ > 1 then
+                for _0xi = 1, _0xC_ - 1 do
+                    _0xR[_0xA + _0xi - 1] = _0xRes[_0xi]
                 end
+            else
+                _0xR[_0xA] = _0xRes[1]
             end
 
         elseif _0xOP == 9 then -- RETURN
