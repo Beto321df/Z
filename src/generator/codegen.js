@@ -1,16 +1,11 @@
-const { generate15Junk } = require('../transforms/renameVars');
-
-class CodeGenerator {
-    generate(vmCode) {
-        const headerJunk1 = generate15Junk();
-        const headerJunk2 = generate15Junk();
-
-        return `--// Z-Protector Custom VM Engine (15-Char Obfuscation)
-local _E = getfenv and getfenv() or _ENV or {}
-_E["${headerJunk1}"] = "${headerJunk2}"
-${vmCode}
-`;
+function generateRandomVarName(length = 15) {
+    // Solo caracteres válidos para identificadores en Luau/Lua
+    const firstChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_';
+    const allChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
+    
+    let result = firstChars[Math.floor(Math.random() * firstChars.length)];
+    for (let i = 1; i < length - 1; i++) {
+        result += allChars[Math.floor(Math.random() * allChars.length)];
     }
+    return result;
 }
-
-module.exports = CodeGenerator;
