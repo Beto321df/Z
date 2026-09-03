@@ -16,21 +16,20 @@ class CodeGenerator {
         const varInst = generateRandomVarName();
         const varFn = generateRandomVarName();
 
-        // Extraer bytecode y stringTable
         const bytecodeArr = (vmData && vmData.bytecode) ? vmData.bytecode : [];
         const stringEntries = (vmData && vmData.stringTable) ? vmData.stringTable : [];
 
-        // Generar decodificación de strings en la tabla de entorno
+        // Generar decodificación de strings escapando la clave de forma segura
         let stringDecoderCode = '';
         stringEntries.forEach(([key, val]) => {
             const charCodes = String(val)
                 .split('')
                 .map(c => `string.char(${c.charCodeAt(0)})`)
                 .join('..');
-            stringDecoderCode += `${varEnv}["${key}"] = ${charCodes || '""'}\n`;
+            const safeKey = JSON.stringify(key);
+            stringDecoderCode += `${varEnv}[${safeKey}] = ${charCodes || '""'}\n`;
         });
 
-        // Convertir bytecode JSON a formato de tabla Luau { { ... } }
         const formattedBytecode = JSON.stringify(bytecodeArr)
             .replace(/\[/g, '{')
             .replace(/\]/g, '}');
