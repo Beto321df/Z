@@ -18,12 +18,15 @@ class CodeGenerator {
         let currentKeyState = 0x5A;
         const encryptedBytes = [];
 
-        // Cifrado Rolling Key XOR
-        for (let i = 0; i < codeToObfuscate.length; i++) {
-            const charCode = codeToObfuscate.charCodeAt(i);
+        // Convertir la cadena a un buffer de bytes UTF-8 exactos
+        const inputBuffer = Buffer.from(codeToObfuscate, 'utf-8');
+
+        // Cifrado Rolling Key XOR a nivel de bytes UTF-8
+        for (let i = 0; i < inputBuffer.length; i++) {
+            const byteVal = inputBuffer[i]; // Byte exacto (0-255)
             const keyByte = symbolKey.charCodeAt(i % symbolKey.length);
             
-            const cipherByte = (charCode ^ keyByte ^ currentKeyState) & 0xFF;
+            const cipherByte = (byteVal ^ keyByte ^ currentKeyState) & 0xFF;
             encryptedBytes.push(cipherByte);
 
             currentKeyState = (currentKeyState * 33 + cipherByte + keyByte) & 0xFF;
