@@ -1314,8 +1314,8 @@
 
                         const resData = await response.json();
 
-                        if (resData.success && resData.obfuscatedCode) {
-                            codeToSave = resData.obfuscatedCode;
+                        if (resData.success && resData.code) {
+                            codeToSave = resData.code;
                         }
                     } catch (err) {
                         console.warn('Error con el motor de ofuscación de Vercel. Se guardará el código directo.', err);
@@ -1369,8 +1369,8 @@
                         body: JSON.stringify({ code: code })
                     });
                     const resData = await response.json();
-                    if (resData.success && resData.obfuscatedCode) {
-                        codeToSave = resData.obfuscatedCode;
+                    if (resData.success && resData.code) {
+                        codeToSave = resData.code;
                     }
                 } catch (e) {
                     console.warn('Fallo la reconexión de ofuscación.');
