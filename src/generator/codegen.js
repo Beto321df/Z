@@ -25,12 +25,12 @@ class CodeGenerator {
         const vmGenerator = new LuauInterpreterGenerator();
         let runnerCode = vmGenerator.generateRunner(bytecode);
 
-        // LIMS: Garantizar que no empiece con corchetes sueltos o tablas no asignadas
-        // Si el intérprete devuelve sólo la estructura/tabla, la asignamos correctamente.
+        // Aseguramos que la primera línea no cause conflictos con expresiones de Luau
         if (typeof runnerCode === 'string') {
             runnerCode = runnerCode.trim();
-            if (runnerCode.startsWith('[') || runnerCode.startsWith('{')) {
-                runnerCode = `;(function()\n local _bytecode = ${runnerCode};\n return _bytecode;\n})();`;
+            // Si por alguna razón empieza con corchete, lo envolvemos correctamente
+            if (runnerCode.startsWith('[')) {
+                runnerCode = `;(function()\n return ${runnerCode}\n})();`;
             }
         }
 
