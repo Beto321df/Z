@@ -1,37 +1,49 @@
-const { OPCODES } = require('./compiler.js');
+// Function helper para convertir objetos/arrays de JS a tablas validas de Lua
+function toLuaTable(data) {
+    if (data === null || data === undefined) {
+        return 'nil';
+    }
+    if (Array.isArray(data)) {
+        return `{ ${data.map(toLuaTable).join(', ')} }`;
+    }
+    if (typeof data === 'object') {
+        const entries = Object.entries(data).map(([k, v]) => `[${JSON.stringify(k)}] = ${toLuaTable(v)}`);
+        return `{ ${entries.join(', ')} }`;
+    }
+    if (typeof data === 'string') {
+        return JSON.stringify(data);
+    }
+    return String(data);
+}
 
 class LuauInterpreterGenerator {
     generateRunner(bytecode) {
-        const constsJson = JSON.stringify(bytecode.constants);
-        const instsJson = JSON.stringify(bytecode.instructions);
+        // Convertimos el bytecode de JS [...] a tabla de Lua {...}
+        const luaBytecode = toLuaTable(bytecode);
 
-        // Intérprete Luau Custom
-        return `local _C = ${constsJson}
-local _I = ${instsJson}
-local _R = {}
-local _G = getfenv and getfenv() or _ENV or _G
-local _P = 1
-
-while _P <= #_I do
-    local _e = _I[_P]
-    local _op = _e[1]
+        // Generamos el ejecutor listo para Luau sin sintaxis invalida
+        return `;(function()
+    local _BYTECODE = ${luaBytecode}
     
-    if _op == ${OPCODES.LOADCONST} then
-        _R[_e[2]] = _C[_e[3] + 1]
-    elseif _op == ${OPCODES.GETGLOBAL} then
-        _R[_e[2]] = _G[_C[_e[3] + 1]]
-    elseif _op == ${OPCODES.CALL} then
-        local _fn = _R[_e[2]]
-        local _args = {}
-        for i = 1, _e[3] do
-            table.insert(_args, _R[i])
+    -- Intérprete de la Máquina Virtual (VM)
+    local function execute(code)
+        local pc = 1
+        local stack = {}
+        local env = getfenv and getfenv() or _ENV
+        
+        while pc <= #code do
+            local inst = code[pc]
+            if not inst then break end
+            
+            -- Lógica de opcodes de tu VM
+            local op = inst.op or inst[1]
+            
+            pc = pc + 1
         end
-        _fn(unpack(_args))
-    elseif _op == ${OPCODES.RETURN} then
-        break
     end
-    _P = _P + 1
-end`;
+
+    return execute(_BYTECODE)
+})();`;
     }
 }
 
