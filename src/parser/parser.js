@@ -1,5 +1,4 @@
-const { TokenType } = require('../lexer/tokens');
-const AST = require('./ast');
+const ASTNode = require('./ast.js');
 
 class Parser {
     constructor(tokens) {
@@ -7,84 +6,51 @@ class Parser {
         this.pos = 0;
     }
 
-    peek() {
-        return this.tokens[this.pos] || { type: TokenType.EOF, value: null };
-    }
-
-    consume() {
-        return this.tokens[this.pos++];
-    }
-
     parse() {
-        const body = [];
-        while (this.peek().type !== TokenType.EOF) {
+        const statements = [];
+        while (this.tokens[this.pos].type !== 'EOF') {
             const stmt = this.parseStatement();
-            if (stmt) body.push(stmt);
+            if (stmt) statements.push(stmt);
         }
-        return new AST.ChunkNode(body);
+        return new ASTNode('Chunk', { body: statements });
     }
 
     parseStatement() {
-        const token = this.peek();
+        const token = this.tokens[this.pos];
 
-        if (token.type === TokenType.KEYWORD && token.value === 'local') {
-            this.consume();
-            const names = [];
-            while (this.peek().type === TokenType.IDENTIFIER) {
-                names.push(this.consume().value);
-                if (this.peek().value === ',') this.consume();
-                else break;
+        if (token.value === 'local') {
+            this.pos++;
+            const name = this.tokens[this.pos++].value;
+            let value = null;
+            if (this.tokens[this.pos] && this.tokens[this.pos].value === '=') {
+                this.pos++;
+                value = this.parseExpression();
             }
-            let init = [];
-            if (this.peek().value === '=') {
-                this.consume();
-                init.push(this.parseExpression());
-            }
-            return new AST.LocalStatementNode(names, init);
+            return new ASTNode('LocalAssignment', { name, value });
         }
 
-        if (token.type === TokenType.IDENTIFIER) {
-            const expr = this.parseExpression();
-            if (this.peek().value === '=') {
-                this.consume();
-                const value = this.parseExpression();
-                return new AST.AssignmentStatementNode([expr], [value]);
+        if (token.type === 'IDENTIFIER') {
+            const name = token.value;
+            this.pos++;
+            if (this.tokens[this.pos] && this.tokens[this.pos].value === '(') {
+                this.pos++; // '('
+                const args = [];
+                while (this.tokens[this.pos] && this.tokens[this.pos].value !== ')') {
+                    args.push(this.parseExpression());
+                    if (this.tokens[this.pos] && this.tokens[this.pos].value === ',') this.pos++;
+                }
+                this.pos++; // ')'
+                return new ASTNode('CallStatement', { name, args });
             }
-            return new AST.CallStatementNode(expr);
         }
 
-        this.consume();
+        this.pos++;
         return null;
     }
 
     parseExpression() {
-        const token = this.peek();
-
-        if (token.type === TokenType.IDENTIFIER) {
-            const callee = new AST.IdentifierNode(this.consume().value);
-            if (this.peek().value === '(') {
-                this.consume();
-                const args = [];
-                while (this.peek().value !== ')' && this.peek().type !== TokenType.EOF) {
-                    args.push(this.parseExpression());
-                    if (this.peek().value === ',') this.consume();
-                }
-                if (this.peek().value === ')') this.consume();
-                return new AST.FunctionCallNode(callee, args);
-            }
-            return callee;
-        }
-
-        if (token.type === TokenType.STRING) {
-            return new AST.StringLiteralNode(this.consume().value);
-        }
-
-        if (token.type === TokenType.NUMBER) {
-            return new AST.NumberLiteralNode(this.consume().value);
-        }
-
-        this.consume();
-        return new AST.StringLiteralNode('');
+        const token = this.tokens[this.pos++];
+        return new ASTNode('Literal', { value: token.value, kind: token.type });
     }
 }
 
