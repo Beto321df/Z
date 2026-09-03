@@ -18,7 +18,7 @@ class CodeGenerator {
         let currentKeyState = 0x5A;
         const encryptedBytes = [];
 
-        // Cifrado Rolling Key
+        // Cifrado Rolling Key XOR
         for (let i = 0; i < codeToObfuscate.length; i++) {
             const charCode = codeToObfuscate.charCodeAt(i);
             const keyByte = symbolKey.charCodeAt(i % symbolKey.length);
@@ -38,8 +38,9 @@ class CodeGenerator {
         const vB = generateRandomVarName();
         const vK = generateRandomVarName();
         const vFn = generateRandomVarName();
-        const vCheck = generateRandomVarName();
-        const vBxor = generateRandomVarName();
+        const vBit = generateRandomVarName();
+        const vStr = generateRandomVarName();
+        const vExec = generateRandomVarName();
 
         const keyCharCodes = symbolKey
             .split('')
@@ -50,35 +51,31 @@ class CodeGenerator {
 
         return `--// Z-Protector Heavy Rolling-Cipher Engine
 local ${vEnv} = getfenv and getfenv() or _ENV or {}
-
-local ${vCheck} = function(f)
-    if typeof(f) ~= "function" then return false end
-    local info = debug and debug.getinfo and debug.getinfo(f)
-    return info and info.what == "C"
-end
-
+local ${vBit} = ${vEnv}.bit32 or bit32
 local ${vKey} = ${keyCharCodes}
 local ${vData} = ${bytesFormatted}
 local ${vOut} = {}
 local ${vState} = 0x5A
-local ${vBxor} = (${vEnv}.bit32 and ${vEnv}.bit32.bxor) or bxor
 
 for ${vI} = 1, #${vData} do
     local ${vK} = string.byte(${vKey}, ((${vI} - 1) % #${vKey}) + 1)
     local ${vB} = ${vData}[${vI}]
     
-    local _dec = ${vBxor}(${vB}, ${vK}, ${vState})
+    local _dec = ${vBit}.bxor(${vB}, ${vK}, ${vState})
     ${vOut}[${vI}] = string.char(_dec)
     
     ${vState} = (${vState} * 33 + ${vB} + ${vK}) % 256
 end
 
-local ${vFn} = loadstring or ${vEnv}.loadstring
-if ${vCheck} and not ${vCheck}(${vFn}) then
-    return function() end
+local ${vStr} = table.concat(${vOut})
+local ${vFn} = loadstring or ${vEnv}.loadstring or getgenv().loadstring
+local ${vExec}, err = ${vFn}(${vStr})
+
+if not ${vExec} then
+    error("[Z-Protector Error]: " .. tostring(err))
 end
 
-return ${vFn}(table.concat(${vOut}))()`;
+return ${vExec}()`;
     }
 }
 
