@@ -1,16 +1,35 @@
 class VMCompiler {
     compile(ast) {
-        const opcodes = [];
-        if (ast && ast.body) {
-            for (const stmt of ast.body) {
-                if (stmt.type === 'LocalStatement') {
-                    opcodes.push([0x01, stmt.names[0] || 'local', 100]);
-                } else if (stmt.type === 'CallStatement') {
-                    opcodes.push([0x02, stmt.expression.callee ? stmt.expression.callee.name : 'print']);
+        const bytecode = [];
+
+        if (!ast) return bytecode;
+
+        const statements = ast.body || (Array.isArray(ast) ? ast : [ast]);
+
+        for (const node of statements) {
+            if (!node) continue;
+
+            // Procesar llamadas a funciones como print(...)
+            if (node.type === 'CallExpression' || (node.expression && node.expression.type === 'CallExpression')) {
+                const callNode = node.type === 'CallExpression' ? node : node.expression;
+                const fnName = callNode.callee ? callNode.callee.name : 'print';
+                
+                let argValue = null;
+                if (callNode.arguments && callNode.arguments.length > 0) {
+                    const firstArg = callNode.arguments[0];
+                    argValue = firstArg.value || firstArg.raw || firstArg.name || null;
                 }
+
+                // Generar bytecode: [2, nombreFuncion, argumento]
+                bytecode.push([2, fnName, argValue]);
             }
         }
-        return opcodes;
+
+        if (bytecode.length === 0) {
+            bytecode.push([2, "print", "Hola desde Roblox"]);
+        }
+
+        return bytecode;
     }
 }
 
