@@ -1,7 +1,7 @@
 const CodeGenerator = require('../src/generator/codegen.js');
 
 module.exports = async (req, res) => {
-    // Encabezados CORS para permitir peticiones desde cualquier origen
+    // Configuración de encabezados CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -10,7 +10,6 @@ module.exports = async (req, res) => {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
-    // Responder inmediatamente a las verificaciones de seguridad preflight (OPTIONS)
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
@@ -21,15 +20,19 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { code } = req.body || {};
-        const sourceScript = code || 'print("Z-Protector Running")';
+        const body = req.body || {};
+        // Obtener el código fuente de cualquiera de los campos posibles
+        const sourceScript = body.code || body.script || body.source || 'print("Z-Protector Loaded")';
 
         const generator = new CodeGenerator();
-        const obfuscatedCode = generator.generate(sourceScript);
+        const obfuscated = generator.generate(sourceScript);
 
+        // Devolver el resultado en múltiples claves para garantizar compatibilidad con el frontend
         res.status(200).json({
             success: true,
-            code: obfuscatedCode
+            code: obfuscated,
+            obfuscatedCode: obfuscated,
+            result: obfuscated
         });
     } catch (error) {
         res.status(500).json({
