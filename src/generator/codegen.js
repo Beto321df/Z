@@ -1,4 +1,3 @@
-// Generador de nombres de variables válidos para el entorno de Luau
 function generateRandomVarName(length = 16) {
     const firstChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_';
     const allChars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_';
@@ -11,54 +10,82 @@ function generateRandomVarName(length = 16) {
 
 class CodeGenerator {
     generate(rawLuaCode) {
-        // Asegurar que recibimos el string del script
         const codeToObfuscate = typeof rawLuaCode === 'string' 
             ? rawLuaCode 
             : (rawLuaCode && rawLuaCode.source) || 'print("Z-Protector Loaded")';
 
-        // Clave de cifrado basada en tu set de símbolos
+        // 1. Clave de símbolos base
         const symbolKey = "/.;,['\\]=-0987654321//?";
-        
-        // Cifrado XOR del script completo
+        let currentKeyState = 0x5A; // Semilla inicial dinámica
         const encryptedBytes = [];
+
+        // 2. Cifrado con Rolling Key + Operación Aritmética Dinámica
         for (let i = 0; i < codeToObfuscate.length; i++) {
             const charCode = codeToObfuscate.charCodeAt(i);
-            const keyCode = symbolKey.charCodeAt(i % symbolKey.length);
-            encryptedBytes.push(charCode ^ keyCode);
+            const keyByte = symbolKey.charCodeAt(i % symbolKey.length);
+            
+            // Cifrado triple: Char ^ Key ^ EstadoMutante
+            const cipherByte = (charCode ^ keyByte ^ currentKeyState) & 0xFF;
+            encryptedBytes.push(cipherByte);
+
+            // La clave muta dinámicamente con cada byte procesado
+            currentKeyState = (currentKeyState * 33 + cipherByte + keyByte) & 0xFF;
         }
 
-        // Crear nombres aleatorios para el runtime
-        const varEnv = generateRandomVarName();
-        const varData = generateRandomVarName();
-        const varKey = generateRandomVarName();
-        const varResult = generateRandomVarName();
-        const varIndex = generateRandomVarName();
-        const varLoad = generateRandomVarName();
+        // Identificadores aleatorios
+        const vEnv = generateRandomVarName();
+        const vKey = generateRandomVarName();
+        const vData = generateRandomVarName();
+        const vOut = generateRandomVarName();
+        const vState = generateRandomVarName();
+        const vI = generateRandomVarName();
+        const vB = generateRandomVarName();
+        const vK = generateRandomVarName();
+        const vFn = generateRandomVarName();
+        const vCheck = generateRandomVarName();
 
-        // Convertir la clave de símbolos a bytes string.char
         const keyCharCodes = symbolKey
             .split('')
             .map(c => `string.char(${c.charCodeAt(0)})`)
             .join('..');
 
-        // Formatear los bytes cifrados en tabla de Luau
         const bytesFormatted = `{${encryptedBytes.join(',')}}`;
 
-        // Generar script ofuscado final para Roblox
-        return `--// Z-Protector Heavy Obfuscator Engine (Luau 3000+ Lines Compatible)
-local ${varEnv} = getfenv and getfenv() or _ENV or {}
-local ${varKey} = ${keyCharCodes}
-local ${varData} = ${bytesFormatted}
-local ${varResult} = {}
+        // 3. Payload para Roblox con Anti-Hook y Desencriptación Mutante
+        return `--// Z-Protector Heavy Rolling-Cipher Engine
+local ${vEnv} = getfenv and getfenv() or _ENV or {}
 
-for ${varIndex} = 1, #${varData} do
-    local _k = string.byte(${varKey}, ((${varIndex} - 1) % #${varKey}) + 1)
-    local _b = ${varEnv}.bit32 and ${varEnv}.bit32.bxor(${varData}[${varIndex}], _k) or (${varData}[${varIndex}] ~ _k)
-    ${varResult}[${varIndex}] = string.char(_b)
+-- Detección Anti-Hook (Invalida ganchos en loadstring / table.concat)
+local ${vCheck} = function(f)
+    if typeof(f) ~= "function" then return false end
+    local info = debug and debug.getinfo and debug.getinfo(f)
+    return info and info.what == "C"
 end
 
-local ${varLoad} = assert(loadstring or ${varEnv}.loadstring)(table.concat(${varResult}))
-return ${varLoad}()`;
+local ${vKey} = ${keyCharCodes}
+local ${vData} = ${bytesFormatted}
+local ${vOut} = {}
+local ${vState} = 0x5A
+
+for ${vI} = 1, #${vData} do
+    local ${vK} = string.byte(${vKey}, ((${vI} - 1) % #${vKey}) + 1)
+    local ${vB} = ${vData}[${vI}]
+    
+    -- Desencriptación con estado mutante
+    local _dec = bit32 and bit32.bxor(${vB}, ${vK}, ${vState}) or (${vB} ~ ${vK} ~ ${vState})
+    ${vOut}[${vI}] = string.char(_dec)
+    
+    -- Mutación de estado para sincronizar la clave del siguiente byte
+    ${vState} = (${vState} * 33 + ${vB} + ${vK}) % 256
+end
+
+local ${vFn} = loadstring or ${vEnv}.loadstring
+if ${vCheck} and not ${vCheck}(${vFn}) then
+    -- Si detecta un hook en loadstring, rompe la ejecución silenciosamente
+    return function() end
+end
+
+return ${vFn}(table.concat(${vOut}))()`;
     }
 }
 
