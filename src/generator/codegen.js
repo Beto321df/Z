@@ -13,7 +13,7 @@ function obfuscateNumber(num) {
     const r1 = Math.floor(Math.random() * 50) + 1;
     const r2 = Math.floor(Math.random() * 20) + 1;
     const calc = (num + r1) * r2;
-    return `(((${calc} / ${r2}) - ${r1}))`;
+    return `(((${calc}/${r2})-${r1}))`;
 }
 
 class CodeGenerator {
@@ -22,9 +22,9 @@ class CodeGenerator {
             ? rawLuaCode 
             : (rawLuaCode && rawLuaCode.source) || 'print("Z-Protector Loaded")';
 
-        // 1. Cifrado Rolling Key UTF-8
+        // 1. Cifrado Rolling Key UTF-8 Sincronizado
         const symbolKey = "/.;,['\\]=-0987654321//?";
-        let currentKeyState = 0x7E;
+        let currentKeyState = 0x5A;
         const encryptedBytes = [];
         const inputBuffer = Buffer.from(codeToObfuscate, 'utf-8');
 
@@ -35,22 +35,24 @@ class CodeGenerator {
             const cipherByte = (byteVal ^ keyByte ^ currentKeyState) & 0xFF;
             encryptedBytes.push(cipherByte);
 
-            currentKeyState = (currentKeyState * 16777619 + cipherByte + keyByte) & 0xFF;
+            // Sincronización exacta con el cliente Lua (* 33)
+            currentKeyState = (currentKeyState * 33 + cipherByte + keyByte) & 0xFF;
         }
 
-        // Identificadores dinámicos
-        const vEnv = generateRandomVarName();
-        const vKey = generateRandomVarName();
-        const vData = generateRandomVarName();
-        const vOut = generateRandomVarName();
-        const vState = generateRandomVarName();
+        // Identificadores dinámicos aleatorios
+        const vG = generateRandomVarName();
+        const vK = generateRandomVarName();
+        const vD = generateRandomVarName();
+        const vO = generateRandomVarName();
+        const vS = generateRandomVarName();
         const vI = generateRandomVarName();
         const vB = generateRandomVarName();
-        const vK = generateRandomVarName();
-        const vBit = generateRandomVarName();
+        const vKB = generateRandomVarName();
+        const vF = generateRandomVarName();
+        const vR = generateRandomVarName();
+        const vE = generateRandomVarName();
         const vStr = generateRandomVarName();
-        const vExec = generateRandomVarName();
-        const vTable = generateRandomVarName();
+        const vTbl = generateRandomVarName();
         const vOp = generateRandomVarName();
 
         const keyCharCodes = symbolKey
@@ -60,34 +62,8 @@ class CodeGenerator {
 
         const bytesFormatted = `{${encryptedBytes.map(b => obfuscateNumber(b)).join(',')}}`;
 
-        // 2. Estructura con Ofuscación de Métodos Nativos y Expresiones Dinámicas
-        return `--// Z-Protector Anti-AST Obfuscation Engine
-local ${vEnv} = (getfenv and getfenv() or _ENV or {})
-local ${vTable} = {
-    [${obfuscateNumber(1)}] = ${vEnv}.string or string,
-    [${obfuscateNumber(2)}] = ${vEnv}.table or table,
-    [${obfuscateNumber(3)}] = ${vEnv}.bit32 or bit32
-}
-
-local ${vKey} = ${keyCharCodes}
-local ${vData} = ${bytesFormatted}
-local ${vOut} = {}
-local ${vState} = ${obfuscateNumber(126)}
-
-for ${vI} = ${obfuscateNumber(1)}, #${vData} do
-    local ${vK} = ${vTable}[1].byte(${vKey}, ((${vI} - ${obfuscateNumber(1)}) % #${vKey}) + ${obfuscateNumber(1)})
-    local ${vB} = ${vData}[${vI}]
-    
-    local ${vOp} = ${vTable}[3].bxor(${vB}, ${vK}, ${vState})
-    ${vOut}[${vI}] = ${vTable}[1].char(${vOp})
-    
-    ${vState} = (${vState} * ${obfuscateNumber(33)} + ${vB} + ${vK}) % ${obfuscateNumber(256)}
-end
-
-local ${vStr} = ${vTable}[2].concat(${vOut})
-local ${vExec} = (loadstring or ${vEnv}.loadstring or getgenv().loadstring)(${vStr})
-
-return ${vExec}()`;
+        // 2. Generación en 1 Sola Línea sin comentarios visibles
+        return `local ${vG}=(getfenv and getfenv())or _ENV or _G;local ${vTbl}={[${obfuscateNumber(1)}]=string or(${vG} and ${vG}.string),[${obfuscateNumber(2)}]=table or(${vG} and ${vG}.table),[${obfuscateNumber(3)}]=bit32 or(${vG} and ${vG}.bit32)};local ${vK}=${keyCharCodes};local ${vD}=${bytesFormatted};local ${vO}={};local ${vS}=${obfuscateNumber(90)};for ${vI}=${obfuscateNumber(1)},#${vD} do local ${vKB}=${vTbl}[1].byte(${vK},((${vI}-${obfuscateNumber(1)})%#${vK})+${obfuscateNumber(1)});local ${vB}=${vD}[${vI}];local ${vOp}=${vTbl}[3].bxor(${vB},${vKB},${vS});${vO}[${vI}]=${vTbl}[1].char(${vOp});${vS}=(${vS}*${obfuscateNumber(33)}+${vB}+${vKB})%${obfuscateNumber(256)} end;local ${vStr}=${vTbl}[2].concat(${vO});local ${vF}=loadstring or(${vG} and ${vG}.loadstring)or getgenv().loadstring;local ${vR},${vE}=${vF}(${vStr});if type(${vR})=="function" then return ${vR}() else error("[Z-Protector Error]: "..tostring(${vE})) end`;
     }
 }
 
