@@ -7,8 +7,8 @@ const VMInterpreterGenerator = require('../src/vm/interpreter');
 const CodeGenerator = require('../src/generator/codegen');
 
 module.exports = async (req, res) => {
-    // Encabezados para permitir CORS en cualquier origen y método
-    res.setHeader('Access-Control-Allow-Credentials', true);
+    // Encabezados para permitir CORS en cualquier origen
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader(
@@ -16,7 +16,7 @@ module.exports = async (req, res) => {
         'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
     );
 
-    // Responder llamadas preflight (OPTIONS)
+    // Responder solicitudes de verificación Preflight
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
     }
@@ -26,9 +26,23 @@ module.exports = async (req, res) => {
     }
 
     try {
-        const { code } = req.body;
-        if (!code) {
-            return res.status(400).json({ error: 'Código no proporcionado' });
+        // Extraer 'code' de forma segura
+        let code = null;
+        if (req.body) {
+            if (typeof req.body === 'string') {
+                try {
+                    const parsed = JSON.parse(req.body);
+                    code = parsed.code;
+                } catch (e) {
+                    code = req.body;
+                }
+            } else if (typeof req.body === 'object') {
+                code = req.body.code;
+            }
+        }
+
+        if (!code || typeof code !== 'string') {
+            return res.status(400).json({ error: 'Código no proporcionado o formato inválido' });
         }
 
         // Pipeline del Ofuscador
