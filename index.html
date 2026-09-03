@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Z Protector</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <title>Z-Protector • Galaxial Engine</title>
+    <!-- Evitar error 404 de favicon -->
+    <link rel="icon" href="data:,">
+    
+    <!-- FontAwesome vía jsDelivr con CORS para evitar bloqueos de Tracking Prevention -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
     
     <!-- SDK de Firebase (Compat Mode) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -49,7 +53,6 @@
             position: relative;
         }
 
-        /* Destellos galácticos animados */
         body::before {
             content: "";
             position: fixed;
@@ -501,7 +504,6 @@
             opacity: 1;
         }
 
-        /* Modal de espera galáctico */
         .loading-modal-card {
             background: rgba(13, 10, 31, 0.95);
             border: 1px solid var(--accent-cyan);
@@ -738,19 +740,19 @@
         </div>
     </div>
 
-    <!-- SCRIPT PRINCIPAL CON INTEGRACIÓN VERCEL API -->
-<script>
-(function() {
-    const _cfg = {
-        apiKey: "AIzaSyBiEqCUqmZOPfCtvTQ1BornqROCCeLJ4kg",
-        authDomain: "loaderz1.firebaseapp.com",
-        databaseURL: "https://loaderz1-default-rtdb.firebaseio.com",
-        projectId: "loaderz1",
-        storageBucket: "loaderz1.firebasestorage.app",
-        messagingSenderId: "323317683651",
-        appId: "1:323317683651:web:1f59098b59b40b2e069976"
-    };
-    
+    <!-- SCRIPT PRINCIPAL CON INTEGRACIÓN VERCEL API Y FIREBASE -->
+    <script>
+        (function() {
+            const _cfg = {
+                apiKey: "AIzaSyBiEqCUqmZOPfCtvTQ1BornqROCCeLJ4kg",
+                authDomain: "loaderz1.firebaseapp.com",
+                databaseURL: "https://loaderz1-default-rtdb.firebaseio.com",
+                projectId: "loaderz1",
+                storageBucket: "loaderz1.firebasestorage.app",
+                messagingSenderId: "323317683651",
+                appId: "1:323317683651:web:1f59098b59b40b2e069976"
+            };
+
             firebase.initializeApp(_cfg);
             const db = firebase.database();
 
@@ -1270,7 +1272,6 @@
                 });
             }
 
-            // FUNCIÓN GUARDAR SCRIPT (OFUSCACIÓN MEDIANTE API VERCEL)
             async function guardarScript() {
                 const id = document.getElementById('script-id').value.trim();
                 const code = document.getElementById('script-code').value;
@@ -1300,13 +1301,11 @@
                         return;
                     }
 
-                    // MOSTRAR ANIMACIÓN DE ESPERA GALÁCTICA
                     mostrarCargando(true);
 
                     let codeToSave = code;
 
                     try {
-                        // CONSULTA DE OFUSCACIÓN A LA API EN VERCEL
                         const response = await fetch('https://zprotector.vercel.app/api/obfuscate', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -1322,7 +1321,6 @@
                         console.warn('Error con el motor de ofuscación de Vercel. Se guardará el código directo.', err);
                     }
 
-                    // GUARDAR EN FIREBASE
                     scriptRef.set({
                         owner: currentUser,
                         code: codeToSave,
