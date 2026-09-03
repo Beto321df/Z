@@ -1,9 +1,8 @@
-// Convierte cualquier string a bytes UTF-8 reales (0-255) en Node.js para evitar errores en string.char
+// Convierte cualquier string a bytes UTF-8 reales (0-255) seguros para Luau
 function stringToLuaBytes(str) {
     if (typeof str !== 'string') return String(str);
     if (str.length === 0) return '""';
     
-    // Buffer convierte caracteres especiales, acentos y emojis a bytes validos (0-255)
     const buf = Buffer.from(str, 'utf-8');
     const bytes = Array.from(buf);
     
@@ -34,7 +33,7 @@ class LuauInterpreterGenerator {
             return '{0,0,0,0}';
         }).join(',') : '') + '}';
 
-        // Helper _0xS robusto que valida rangos en Luau
+        // Runner de VM compatible con 0-index y 1-index en Luau
         return `local function _0xS(b)
     if type(b) == "string" then return b end
     if type(b) ~= "table" then return "" end
@@ -55,7 +54,15 @@ local function _0xVM(_0xInst, _0xConst)
     local _0xPC = 1
     local _0xR = {}
     local _0xE = getfenv and getfenv() or _ENV
-    
+
+    -- Helper para resolver constantes convirtiendo índices 0-based (JS) a 1-based (Lua)
+    local function _0xgetC(idx)
+        if idx == nil then return nil end
+        if _0xConst[idx] ~= nil then return _0xConst[idx] end
+        if type(idx) == "number" and _0xConst[idx + 1] ~= nil then return _0xConst[idx + 1] end
+        return nil
+    end
+
     while true do
         local _0xC = _0xInst[_0xPC]
         if not _0xC then break end
@@ -69,22 +76,43 @@ local function _0xVM(_0xInst, _0xConst)
             _0xR[_0xA] = _0xR[_0xB]
 
         elseif _0xOP == 2 then -- LOADK
-            _0xR[_0xA] = _0xConst[_0xB]
+            _0xR[_0xA] = _0xgetC(_0xB)
 
         elseif _0xOP == 3 then -- GETGLOBAL
-            _0xR[_0xA] = _0xE[_0xConst[_0xB]]
+            local _0xKey = _0xgetC(_0xB)
+            if _0xKey ~= nil then
+                _0xR[_0xA] = _0xE[_0xKey]
+            end
 
         elseif _0xOP == 4 then -- SETGLOBAL
-            _0xE[_0xConst[_0xB]] = _0xR[_0xA]
+            local _0xKey = _0xgetC(_0xB)
+            if _0xKey ~= nil then
+                _0xE[_0xKey] = _0xR[_0xA]
+            end
 
         elseif _0xOP == 5 then -- GETTABLE
-            local _0xKey = type(_0xC_) == "number" and _0xConst[_0xC_] or _0xR[_0xC_]
-            _0xR[_0xA] = _0xR[_0xB][_0xKey]
+            local _0xTarget = _0xR[_0xB]
+            local _0xKey = type(_0xC_) == "number" and _0xgetC(_0xC_) or _0xR[_0xC_]
+            
+            if _0xTarget ~= nil and _0xKey ~= nil then
+                local success, result = pcall(function() return _0xTarget[_0xKey] end)
+                if success then
+                    _0xR[_0xA] = result
+                else
+                    _0xR[_0xA] = nil
+                end
+            else
+                _0xR[_0xA] = nil
+            end
 
         elseif _0xOP == 6 then -- SETTABLE
-            local _0xKey = type(_0xB) == "number" and _0xConst[_0xB] or _0xR[_0xB]
-            local _0xVal = type(_0xC_) == "number" and _0xConst[_0xC_] or _0xR[_0xC_]
-            _0xR[_0xA][_0xKey] = _0xVal
+            local _0xTarget = _0xR[_0xA]
+            local _0xKey = type(_0xB) == "number" and _0xgetC(_0xB) or _0xR[_0xB]
+            local _0xVal = type(_0xC_) == "number" and _0xgetC(_0xC_) or _0xR[_0xC_]
+            
+            if _0xTarget ~= nil and _0xKey ~= nil then
+                pcall(function() _0xTarget[_0xKey] = _0xVal end)
+            end
 
         elseif _0xOP == 7 then -- NEWTABLE
             _0xR[_0xA] = {}
@@ -93,15 +121,17 @@ local function _0xVM(_0xInst, _0xConst)
             local _0xFunc = _0xR[_0xA]
             if type(_0xFunc) == "function" then
                 local _0xArgs = {}
-                if _0xB > 1 then
+                if type(_0xB) == "number" and _0xB > 1 then
                     for _0xi = 1, _0xB - 1 do
                         table.insert(_0xArgs, _0xR[_0xA + _0xi])
                     end
                 end
-                local _0xRes = {_0xFunc(unpack(_0xArgs))}
-                if _0xC_ > 1 then
-                    for _0xi = 1, _0xC_ - 1 do
-                        _0xR[_0xA + _0xi - 1] = _0xRes[_0xi]
+                local success, _0xRes = pcall(function() return {_0xFunc(unpack(_0xArgs))} end)
+                if success and type(_0xRes) == "table" then
+                    if type(_0xC_) == "number" and _0xC_ > 1 then
+                        for _0xi = 1, _0xC_ - 1 do
+                            _0xR[_0xA + _0xi - 1] = _0xRes[_0xi]
+                        end
                     end
                 end
             end
@@ -109,13 +139,17 @@ local function _0xVM(_0xInst, _0xConst)
         elseif _0xOP == 9 then -- RETURN
             if _0xB == 1 then return end
             local _0xRet = {}
-            for _0xi = _0xA, _0xA + _0xB - 2 do
-                table.insert(_0xRet, _0xR[_0xi])
+            if type(_0xA) == "number" and type(_0xB) == "number" then
+                for _0xi = _0xA, _0xA + _0xB - 2 do
+                    table.insert(_0xRet, _0xR[_0xi])
+                end
             end
             return unpack(_0xRet)
 
         elseif _0xOP == 10 then -- JMP
-            _0xPC = _0xPC + _0xA
+            if type(_0xA) == "number" then
+                _0xPC = _0xPC + _0xA
+            end
         end
         
         _0xPC = _0xPC + 1
