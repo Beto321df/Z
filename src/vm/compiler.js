@@ -9,7 +9,7 @@ class BytecodeCompiler {
         let idx = this.constants.indexOf(val);
         if (idx === -1) {
             this.constants.push(val);
-            idx = this.constants.length; // 1-based index para Lua
+            idx = this.constants.length; // Índice base 1 para Lua
         } else {
             idx = idx + 1;
         }
@@ -28,7 +28,7 @@ class BytecodeCompiler {
             return reg;
         }
 
-        // 2. Literales (String, Número, Boolean, Nil)
+        // 2. Literales
         if (node.type === 'StringLiteral' || node.type === 'NumericLiteral' || node.type === 'BooleanLiteral') {
             const constIdx = this.addConstant(node.value);
             this.instructions.push(['LOADK', currentReg, constIdx, 0]);
@@ -48,7 +48,7 @@ class BytecodeCompiler {
             return currentReg;
         }
 
-        // 4. Llamadas a función estándar (foo())
+        // 4. Llamadas a función estándar
         if (node.type === 'CallStatement') {
             return this.compileNode(node.expression, currentReg);
         }
@@ -63,19 +63,20 @@ class BytecodeCompiler {
                 this.compileNode(args[i], argReg + i);
             }
 
-            this.instructions.push(['CALL', funcReg, args.length + 1, 1]);
+            // C = 2 para guardar 1 valor de retorno en funcReg
+            this.instructions.push(['CALL', funcReg, args.length + 1, 2]);
             return funcReg;
         }
 
-        // 4b. Llamadas a método con dos puntos (game:GetService("..."))
+        // 4b. Llamadas a método con dos puntos (ej: game:GetService("..."))
         if (node.type === 'SendExpression') {
             const funcReg = currentReg;
             const selfReg = currentReg + 1;
 
-            // Evaluar el objeto base (ej: game) en selfReg
+            // Obtener el objeto base (ej: game) en selfReg
             this.compileNode(node.base, selfReg);
 
-            // Obtener el método (ej: GetService) en funcReg
+            // Extraer el método (ej: GetService) de selfReg a funcReg
             const methodKey = node.method ? node.method.name : 'method';
             const keyIdx = this.addConstant(methodKey);
             this.instructions.push(['GETTABLE', funcReg, selfReg, keyIdx]);
@@ -86,8 +87,8 @@ class BytecodeCompiler {
                 this.compileNode(args[i], selfReg + 1 + i);
             }
 
-            // Llamar pasando self + argumentos
-            this.instructions.push(['CALL', funcReg, args.length + 2, 1]);
+            // CALL: A=funcReg, B=args.length+2 (self + args), C=2 (guardar retorno en funcReg)
+            this.instructions.push(['CALL', funcReg, args.length + 2, 2]);
             return funcReg;
         }
 
@@ -168,7 +169,7 @@ class BytecodeCompiler {
             return tblReg;
         }
 
-        // 8. Operaciones Matemáticas y Lógicas (+, -, *, /, .., ==)
+        // 8. Operaciones Matemáticas y Lógicas
         if (node.type === 'BinaryExpression') {
             const leftReg = currentReg;
             const rightReg = currentReg + 1;
@@ -187,7 +188,7 @@ class BytecodeCompiler {
             return currentReg;
         }
 
-        // 9. Operadores Unarios (not, -, #)
+        // 9. Operadores Unarios
         if (node.type === 'UnaryExpression') {
             const argReg = currentReg;
             this.compileNode(node.argument, argReg);
@@ -198,7 +199,7 @@ class BytecodeCompiler {
             return currentReg;
         }
 
-        // 10. Funciones (function test() ... end)
+        // 10. Declaración de Funciones
         if (node.type === 'FunctionDeclaration') {
             if (node.identifier) {
                 const funcName = node.identifier.name;
@@ -216,7 +217,7 @@ class BytecodeCompiler {
             return currentReg;
         }
 
-        // 11. Condicionales e Iteradores (IfStatement, While, For)
+        // 11. Condicionales e Iteradores
         if (node.type === 'IfStatement') {
             for (const clause of (node.clauses || [])) {
                 if (clause.condition) this.compileNode(clause.condition, currentReg);
@@ -231,7 +232,7 @@ class BytecodeCompiler {
             return currentReg;
         }
 
-        // 12. Sentencia Return
+        // 12. Return
         if (node.type === 'ReturnStatement') {
             const args = node.arguments || [];
             for (let i = 0; i < args.length; i++) {
