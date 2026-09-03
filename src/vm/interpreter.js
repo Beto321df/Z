@@ -1,29 +1,28 @@
-// Función para codificar constantes en cadenas de bytes escapados
+// Convierte textos a arreglos de bytes numéricos (Sin diagonales '\\' para evitar errores de escape en Luau)
 function stringToLuaBytes(str) {
-    let result = '';
+    if (typeof str !== 'string') return String(str);
+    if (str.length === 0) return '""';
+    let bytes = [];
     for (let i = 0; i < str.length; i++) {
-        result += '\\' + str.charCodeAt(i);
+        bytes.push(str.charCodeAt(i));
     }
-    return '"' + result + '"';
+    return `_0xS({${bytes.join(',')}})`;
 }
 
 class LuauInterpreterGenerator {
     generateRunner(bytecode) {
-        // Estructura de Bytecode estilo Luraph:
-        // [1] Tabla de Constantes (_K)
-        // [2] Tabla de Instrucciones (_I)
-        
         const constants = bytecode.constants || [];
-        const instructions = bytecode.instructions || bytecode;
+        const instructions = bytecode.instructions || (Array.isArray(bytecode) ? bytecode : []);
 
-        // Formatear tabla de constantes a sintaxis Lua
+        // Formatear la tabla de constantes (_K)
         const formattedConstants = '{' + constants.map(c => {
             if (typeof c === 'string') return stringToLuaBytes(c);
             if (c === null || c === undefined) return 'nil';
+            if (typeof c === 'boolean' || typeof c === 'number') return String(c);
             return String(c);
         }).join(',') + '}';
 
-        // Formatear instrucciones [OpCode, A, B, C]
+        // Formatear las instrucciones de la VM (_I)
         const formattedInstructions = '{' + (Array.isArray(instructions) ? instructions.map(inst => {
             if (Array.isArray(inst)) return '{' + inst.join(',') + '}';
             if (typeof inst === 'object') {
@@ -32,8 +31,17 @@ class LuauInterpreterGenerator {
             return '{0,0,0,0}';
         }).join(',') : '') + '}';
 
-        // Bucle de la Máquina Virtual (VM Runner estilo Luraph)
-        return `local _0xK = ${formattedConstants}
+        // Runner de la VM con helper _0xS para reconstruir strings sin usar escape sequences
+        return `local function _0xS(b)
+    if type(b) == "string" then return b end
+    local t = {}
+    for i = 1, #b do
+        t[i] = string.char(b[i])
+    end
+    return table.concat(t)
+end
+
+local _0xK = ${formattedConstants}
 local _0xI = ${formattedInstructions}
 
 local function _0xVM(_0xInst, _0xConst)
@@ -50,32 +58,31 @@ local function _0xVM(_0xInst, _0xConst)
         local _0xB  = _0xC[3]
         local _0xC_ = _0xC[4]
         
-        -- Mapping de Opcodes estilo Luraph
-        if _0xOP == 1 then -- MOVE: Stack[A] = Stack[B]
+        if _0xOP == 1 then -- MOVE
             _0xR[_0xA] = _0xR[_0xB]
 
-        elseif _0xOP == 2 then -- LOADK: Stack[A] = Const[B]
+        elseif _0xOP == 2 then -- LOADK
             _0xR[_0xA] = _0xConst[_0xB]
 
-        elseif _0xOP == 3 then -- GETGLOBAL: Stack[A] = Env[Const[B]]
+        elseif _0xOP == 3 then -- GETGLOBAL
             _0xR[_0xA] = _0xE[_0xConst[_0xB]]
 
-        elseif _0xOP == 4 then -- SETGLOBAL: Env[Const[B]] = Stack[A]
+        elseif _0xOP == 4 then -- SETGLOBAL
             _0xE[_0xConst[_0xB]] = _0xR[_0xA]
 
-        elseif _0xOP == 5 then -- GETTABLE: Stack[A] = Stack[B][Const[C] or Stack[C]]
+        elseif _0xOP == 5 then -- GETTABLE
             local _0xKey = type(_0xC_) == "number" and _0xConst[_0xC_] or _0xR[_0xC_]
             _0xR[_0xA] = _0xR[_0xB][_0xKey]
 
-        elseif _0xOP == 6 then -- SETTABLE: Stack[A][Key] = Stack[C]
+        elseif _0xOP == 6 then -- SETTABLE
             local _0xKey = type(_0xB) == "number" and _0xConst[_0xB] or _0xR[_0xB]
             local _0xVal = type(_0xC_) == "number" and _0xConst[_0xC_] or _0xR[_0xC_]
             _0xR[_0xA][_0xKey] = _0xVal
 
-        elseif _0xOP == 7 then -- NEWTABLE: Stack[A] = {}
+        elseif _0xOP == 7 then -- NEWTABLE
             _0xR[_0xA] = {}
 
-        elseif _0xOP == 8 then -- CALL: Exec Stack[A]
+        elseif _0xOP == 8 then -- CALL
             local _0xFunc = _0xR[_0xA]
             if type(_0xFunc) == "function" then
                 local _0xArgs = {}
@@ -92,7 +99,7 @@ local function _0xVM(_0xInst, _0xConst)
                 end
             end
 
-        elseif _0xOP == 9 then -- RETURN: Retorna valores
+        elseif _0xOP == 9 then -- RETURN
             if _0xB == 1 then return end
             local _0xRet = {}
             for _0xi = _0xA, _0xA + _0xB - 2 do
@@ -100,7 +107,7 @@ local function _0xVM(_0xInst, _0xConst)
             end
             return unpack(_0xRet)
 
-        elseif _0xOP == 10 then -- JMP: Salto relativo de PC
+        elseif _0xOP == 10 then -- JMP
             _0xPC = _0xPC + _0xA
         end
         
