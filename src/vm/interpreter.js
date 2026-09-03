@@ -1,11 +1,12 @@
-// Convierte textos a arreglos de bytes numéricos (Sin diagonales '\\' para evitar errores de escape en Luau)
+// Convierte cualquier string a bytes UTF-8 reales (0-255) en Node.js para evitar errores en string.char
 function stringToLuaBytes(str) {
     if (typeof str !== 'string') return String(str);
     if (str.length === 0) return '""';
-    let bytes = [];
-    for (let i = 0; i < str.length; i++) {
-        bytes.push(str.charCodeAt(i));
-    }
+    
+    // Buffer convierte caracteres especiales, acentos y emojis a bytes validos (0-255)
+    const buf = Buffer.from(str, 'utf-8');
+    const bytes = Array.from(buf);
+    
     return `_0xS({${bytes.join(',')}})`;
 }
 
@@ -19,24 +20,30 @@ class LuauInterpreterGenerator {
             if (typeof c === 'string') return stringToLuaBytes(c);
             if (c === null || c === undefined) return 'nil';
             if (typeof c === 'boolean' || typeof c === 'number') return String(c);
-            return String(c);
+            return 'nil';
         }).join(',') + '}';
 
         // Formatear las instrucciones de la VM (_I)
         const formattedInstructions = '{' + (Array.isArray(instructions) ? instructions.map(inst => {
-            if (Array.isArray(inst)) return '{' + inst.join(',') + '}';
-            if (typeof inst === 'object') {
+            if (Array.isArray(inst)) {
+                return '{' + inst.map(n => typeof n === 'number' ? n : 0).join(',') + '}';
+            }
+            if (typeof inst === 'object' && inst !== null) {
                 return '{' + (inst.op || 0) + ',' + (inst.a || 0) + ',' + (inst.b || 0) + ',' + (inst.c || 0) + '}';
             }
             return '{0,0,0,0}';
         }).join(',') : '') + '}';
 
-        // Runner de la VM con helper _0xS para reconstruir strings sin usar escape sequences
+        // Helper _0xS robusto que valida rangos en Luau
         return `local function _0xS(b)
     if type(b) == "string" then return b end
+    if type(b) ~= "table" then return "" end
     local t = {}
     for i = 1, #b do
-        t[i] = string.char(b[i])
+        local val = tonumber(b[i]) or 0
+        if val >= 0 and val <= 255 then
+            t[#t + 1] = string.char(val)
+        end
     end
     return table.concat(t)
 end
