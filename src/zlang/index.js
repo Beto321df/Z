@@ -1,24 +1,24 @@
-const { tokenize, TOKEN_TYPES } = require('./lexer');
-const { ZCompiler, OPCODES } = require('./compiler');
+const { OPS, BIN, UNARY, buildProgram } = require('./compiler3');
+const { encodeProgram } = require('./format3');
 const { encodeBytecode, decodeBytecode, ALPHABET, checksum } = require('./codec');
-const { decodeIR } = require('./runtime');
 
 function compile(source) {
-    const tokens = tokenize(source);
-    const ir = new ZCompiler().compile(tokens);
-    return encodeBytecode(ir);
-}
-
-function restore(packet) {
-    return decodeIR(decodeBytecode(packet));
+    const program = buildProgram(source);
+    return {
+        program,
+        bytecode: encodeProgram(program)
+    };
 }
 
 module.exports = {
-    TOKEN_TYPES,
-    OPCODES,
+    OPS,
+    BIN,
+    UNARY,
     ALPHABET,
     checksum,
-    tokenize,
-    compile,
-    restore
+    buildProgram,
+    encodeProgram,
+    encodeBytecode,
+    decodeBytecode,
+    compile
 };
