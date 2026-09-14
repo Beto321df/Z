@@ -1,4 +1,3 @@
-
 const CodeGenerator = require('../src/generator/codegen.js');
 
 module.exports = async (req, res) => {
@@ -15,19 +14,21 @@ module.exports = async (req, res) => {
     try {
         const body = req.body || {};
         const sourceScript = body.code || body.script || 'print("Z-Protector Loaded")';
-
-        const generator = new CodeGenerator();
-        const obfuscatedCode = generator.generate(sourceScript);
+        const obfuscatedCode = new CodeGenerator().generate(sourceScript);
 
         res.status(200).json({
             success: true,
+            engine: 'Z-Lang 2',
+            format: 'Z-IR / Z-Bytecode',
+            payloadAlphabet: 'digits-and-symbols-only',
+            singleLine: true,
             code: obfuscatedCode,
-            obfuscatedCode: obfuscatedCode // <--- Añadimos esto para que coincida con el HTML
+            obfuscatedCode
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            error: error.message
+            error: error instanceof Error ? error.message : String(error)
         });
     }
 };
