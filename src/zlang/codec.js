@@ -64,13 +64,14 @@ function makeParams() {
 }
 
 function checksum(bytes) {
-    let a = 0x3d;
-    let b = 0xa7;
+    // Deliberately arithmetic-only so the emitted Luau verifier can reproduce it safely.
+    let a = 61;
+    let b = 167;
     for (let i = 0; i < bytes.length; i += 1) {
-        a = (a + bytes[i] + i) & 255;
-        b = (b ^ ((bytes[i] + a + i * 13) & 255)) & 255;
+        a = (a + bytes[i] + i) % 256;
+        b = (b + bytes[i] + a + i * 13) % 256;
     }
-    return ((a << 8) | b) >>> 0;
+    return (a * 256 + b) >>> 0;
 }
 
 function chunk(input, size) {
