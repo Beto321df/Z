@@ -33,7 +33,7 @@ class CodeGenerator {
         try {
             luaparse.parse(source, { wait: false, luaVersion: '5.1' });
         } catch (_) {
-            // Luau extends Lua 5.1; unsupported syntax remains valid input for the Z lexer.
+            // Luau extends Lua 5.1.
         }
     }
 
@@ -48,7 +48,6 @@ class CodeGenerator {
     generate(rawLuaCode) {
         const source = typeof rawLuaCode === 'string' ? rawLuaCode : rawLuaCode && rawLuaCode.source;
         if (typeof source !== 'string' || !source.trim()) throw new Error('El código Lua/Luau está vacío.');
-
         this.validateSource(source);
 
         const tokens = tokenize(source);
@@ -59,16 +58,16 @@ class CodeGenerator {
         const parts = packet.z.map(part => {
             let inverse = 1;
             for (let i = 1; i < 256; i += 2) {
-                if (((part.m * i) & 255) === 1) {
+                if (((part.m * i) % 256) === 1) {
                     inverse = i;
                     break;
                 }
             }
-            return `{${part.p},${part.n},"${part.s}",${part.x},${part.q},${part.t},${part.a},${part.m},${inverse}}`;
+            return `{${part.p},${part.n},\"${part.s}\",${part.x},${part.q},${part.t},${part.a},${part.m},${inverse}}`;
         }).join(',');
 
         const decoder = [];
-        decoder.push(`local ${n.alphabet}="${ALPHABET}"`);
+        decoder.push(`local ${n.alphabet}=\"${ALPHABET}\"`);
         decoder.push(`local ${n.map}={}`);
         decoder.push(`for ${n.i}=1,#${n.alphabet} do ${n.map}[string.sub(${n.alphabet},${n.i},${n.i})]=${n.i}-1 end`);
         decoder.push(`local ${n.parts}={${parts}}`);
@@ -88,21 +87,22 @@ class CodeGenerator {
         decoder.push('end');
         decoder.push(`local ${n.out}=table.concat(${n.raw})`);
 
-        decoder.push(`local ${n.checkA}=0x3d;local ${n.checkB}=0xa7;local ${n.checkIndex}=0`);
-        decoder.push(`for ${n.i}=1,#${n.out} do local ${n.value}=string.byte(${n.out},${n.i});${n.checkIndex}=${n.i}-1;${n.checkA}=(${n.checkA}+${n.value}+${n.checkIndex})%256;${n.checkB}=${n.checkB}~(((${n.value}+${n.checkA}+${n.checkIndex}*13)%256)) end`);
-        decoder.push(`local ${n.expectedSize}=${packet.c};local ${n.expectedHash}=${packet.h};if #${n.out}~=${n.expectedSize} or (${n.checkA}*256+${n.checkB})~=${n.expectedHash} then error("Z payload integrity") end`);
+        // Pure arithmetic integrity check: avoid bitwise syntax in emitted Luau.
+        decoder.push(`local ${n.checkA}=61;local ${n.checkB}=167;local ${n.checkIndex}=0`);
+        decoder.push(`for ${n.i}=1,#${n.out} do local ${n.value}=string.byte(${n.out},${n.i});${n.checkIndex}=${n.i}-1;${n.checkA}=(${n.checkA}+${n.value}+${n.checkIndex})%256;${n.checkB}=(${n.checkB}+${n.value}+${n.checkA}+${n.checkIndex}*13)%256 end`);
+        decoder.push(`local ${n.expectedSize}=${packet.c};local ${n.expectedHash}=(${Math.floor(packet.h / 256)}*256+${packet.h % 256});if #${n.out}~=${n.expectedSize} or (${n.checkA}*256+${n.checkB})~=${n.expectedHash} then error(\"Z payload integrity\") end`);
 
         decoder.push(`local ${n.pc}=1;local ${n.text}={};local ${n.tokenCount}=0`);
         decoder.push(`while ${n.pc}<=#${n.out} do`);
         decoder.push(`local ${n.op}=string.byte(${n.out},${n.pc});${n.pc}=${n.pc}+1`);
         decoder.push(`if ${n.op}==90 then`);
-        decoder.push(`local ${n.raw}=string.byte(${n.out},${n.pc});local ${n.value}=string.byte(${n.out},${n.pc}+1);if ${n.raw}~=2 or ${n.value}~=1 then error("Z-IR header") end;${n.pc}=${n.pc}+2`);
+        decoder.push(`local ${n.raw}=string.byte(${n.out},${n.pc});local ${n.value}=string.byte(${n.out},${n.pc}+1);if ${n.raw}~=2 or ${n.value}~=1 then error(\"Z-IR header\") end;${n.pc}=${n.pc}+2`);
         decoder.push(`elseif ${n.op}==17 then`);
         decoder.push(`local ${n.raw}=string.byte(${n.out},${n.pc});local ${n.len}=string.byte(${n.out},${n.pc}+1)*256+string.byte(${n.out},${n.pc}+2);${n.pc}=${n.pc}+3`);
         decoder.push(`local ${n.ch}=string.sub(${n.out},${n.pc},${n.pc}+${n.len}-1);${n.text}[#${n.text}+1]=${n.ch};${n.pc}=${n.pc}+${n.len};${n.tokenCount}=${n.tokenCount}+1`);
-        decoder.push(`elseif ${n.op}==47 then break else error("Z-IR opcode") end`);
+        decoder.push(`elseif ${n.op}==47 then break else error(\"Z-IR opcode\") end`);
         decoder.push('end');
-        decoder.push(`if ${n.tokenCount}==0 then error("Z-IR vacío") end`);
+        decoder.push(`if ${n.tokenCount}==0 then error(\"Z-IR vacío\") end`);
         decoder.push(`local ${n.loader},${n.err}=(loadstring or load)(table.concat(${n.text}))`);
         decoder.push(`if not ${n.loader} then error(${n.err}) end`);
         decoder.push(`return ${n.loader}()`);
