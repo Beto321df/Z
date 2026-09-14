@@ -45,6 +45,14 @@ class CodeGenerator {
         return `local ${n.checkA}=${a};local ${n.checkB}=(${value}-${a}+${b})%1000003`;
     }
 
+    lintGenerated(output) {
+        try {
+            luaparse.parse(output, { wait: false, luaVersion: '5.1' });
+        } catch (error) {
+            throw new Error(`Z generó un loader inválido: ${error.message}`);
+        }
+    }
+
     generate(rawLuaCode) {
         const source = typeof rawLuaCode === 'string' ? rawLuaCode : rawLuaCode && rawLuaCode.source;
         if (typeof source !== 'string' || !source.trim()) throw new Error('El código Lua/Luau está vacío.');
@@ -87,7 +95,6 @@ class CodeGenerator {
         decoder.push('end');
         decoder.push(`local ${n.out}=table.concat(${n.raw})`);
 
-        // Pure arithmetic integrity check: avoid bitwise syntax in emitted Luau.
         decoder.push(`local ${n.checkA}=61;local ${n.checkB}=167;local ${n.checkIndex}=0`);
         decoder.push(`for ${n.i}=1,#${n.out} do local ${n.value}=string.byte(${n.out},${n.i});${n.checkIndex}=${n.i}-1;${n.checkA}=(${n.checkA}+${n.value}+${n.checkIndex})%256;${n.checkB}=(${n.checkB}+${n.value}+${n.checkA}+${n.checkIndex}*13)%256 end`);
         decoder.push(`local ${n.expectedSize}=${packet.c};local ${n.expectedHash}=(${Math.floor(packet.h / 256)}*256+${packet.h % 256});if #${n.out}~=${n.expectedSize} or (${n.checkA}*256+${n.checkB})~=${n.expectedHash} then error(\"Z payload integrity\") end`);
@@ -107,7 +114,9 @@ class CodeGenerator {
         decoder.push(`if not ${n.loader} then error(${n.err}) end`);
         decoder.push(`return ${n.loader}()`);
 
-        return `${this.makeDecoy(n, packet.h)};${decoder.join(';')}`;
+        const output = `${this.makeDecoy(n, packet.h)};${decoder.join(';')}`;
+        this.lintGenerated(output);
+        return output;
     }
 }
 
