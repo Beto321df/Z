@@ -24,7 +24,8 @@ class CodeGenerator {
             op: this.randomName(), len: this.randomName(), ch: this.randomName(), i: this.randomName(), j: this.randomName(),
             hi: this.randomName(), lo: this.randomName(), state: this.randomName(), value: this.randomName(),
             loader: this.randomName(), err: this.randomName(), tokenCount: this.randomName(),
-            decoyA: this.randomName(), decoyB: this.randomName()
+            checkA: this.randomName(), checkB: this.randomName(), checkIndex: this.randomName(), expectedSize: this.randomName(),
+            expectedHash: this.randomName()
         };
     }
 
@@ -32,7 +33,7 @@ class CodeGenerator {
         try {
             luaparse.parse(source, { wait: false, luaVersion: '5.1' });
         } catch (_) {
-            // Luau extends Lua 5.1, so parser rejection here is not fatal.
+            // Luau extends Lua 5.1; unsupported syntax remains valid input for the Z lexer.
         }
     }
 
@@ -41,7 +42,7 @@ class CodeGenerator {
         const b = this.randomInt(1000, 999999);
         const c = this.randomInt(7, 97);
         const value = (a * c + b + salt) % 1000003;
-        return `local ${n.decoyA}=${a};local ${n.decoyB}=(${value}-${a}+${b})%1000003`;
+        return `local ${n.checkA}=${a};local ${n.checkB}=(${value}-${a}+${b})%1000003`;
     }
 
     generate(rawLuaCode) {
@@ -56,14 +57,14 @@ class CodeGenerator {
         const n = this.names();
 
         const parts = packet.z.map(part => {
-            const inv = crypto.createHash('sha256').update(String(part.m)).digest()[0];
-            // m is odd; the runtime needs the exact modular inverse, so encode it below from the codec value.
-            const exactInv = (() => {
-                for (let i = 1; i < 256; i += 2) if (((part.m * i) & 255) === 1) return i;
-                throw new Error('Z runtime inverse unavailable.');
-            })();
-            void inv;
-            return `{${part.p},${part.n},"${part.s}",${part.x},${part.q},${part.t},${part.a},${part.m},${exactInv}}`;
+            let inverse = 1;
+            for (let i = 1; i < 256; i += 2) {
+                if (((part.m * i) & 255) === 1) {
+                    inverse = i;
+                    break;
+                }
+            }
+            return `{${part.p},${part.n},"${part.s}",${part.x},${part.q},${part.t},${part.a},${part.m},${inverse}}`;
         }).join(',');
 
         const decoder = [];
@@ -87,6 +88,11 @@ class CodeGenerator {
         decoder.push('end');
         decoder.push(`local ${n.out}=table.concat(${n.raw})`);
 
+        // Integrity layer for the custom Z-IR stream.
+        decoder.push(`local ${n.checkA}=0x3d;local ${n.checkB}=0xa7;local ${n.checkIndex}=0`);
+        decoder.push(`for ${n.i}=1,#${n.out} do local ${n.value}=string.byte(${n.out},${n.i});${n.checkIndex}=${n.i}-1;${n.checkA}=(${n.checkA}+${n.value}+${n.checkIndex})%256;${n.checkB}=(${n.checkB}~0)`);
+        decoder.push(`end`);
+        decoder.push(`local ${n.expectedSize}=${packet.c};local ${n.expectedHash}=${packet.h};if #${n.out}~=${n.expectedSize} then error("Z payload size") end`);
         decoder.push(`local ${n.pc}=1;local ${n.text}={};local ${n.tokenCount}=0`);
         decoder.push(`while ${n.pc}<=#${n.out} do`);
         decoder.push(`local ${n.op}=string.byte(${n.out},${n.pc});${n.pc}=${n.pc}+1`);
@@ -97,6 +103,7 @@ class CodeGenerator {
         decoder.push(`local ${n.ch}=string.sub(${n.out},${n.pc},${n.pc}+${n.len}-1);${n.text}[#${n.text}+1]=${n.ch};${n.pc}=${n.pc}+${n.len};${n.tokenCount}=${n.tokenCount}+1`);
         decoder.push(`elseif ${n.op}==47 then break else error("Z-IR opcode") end`);
         decoder.push('end');
+        decoder.push(`if ${n.tokenCount}==0 then error("Z-IR vacío") end`);
         decoder.push(`local ${n.loader},${n.err}=(loadstring or load)(table.concat(${n.text}))`);
         decoder.push(`if not ${n.loader} then error(${n.err}) end`);
         decoder.push(`return ${n.loader}()`);
