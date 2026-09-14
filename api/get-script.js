@@ -1,3 +1,5 @@
+const CodeGenerator = require('../src/generator/codegen.js');
+
 export default async function handler(req, res) {
     const { id } = req.query;
     const accept = (req.headers['accept'] || '').toLowerCase();
@@ -23,9 +25,7 @@ export default async function handler(req, res) {
 
     try {
         const cleanId = String(id).replace(/[^a-zA-Z0-9_-]/g, '');
-        if (!cleanId) {
-            return res.status(400).send("-- Z Protector: ID inválido.");
-        }
+        if (!cleanId) return res.status(400).send("-- Z Protector: ID inválido.");
 
         const DB_URL = 'https://loaderz1-default-rtdb.firebaseio.com';
         const SECRET = process.env.FIREBASE_SECRET;
@@ -36,16 +36,20 @@ export default async function handler(req, res) {
             return res.status(404).send("-- Z Protector: script no encontrado.");
         }
 
-        const code = typeof data === 'string'
-            ? data
-            : (typeof data.code === 'string' ? data.code : '');
-
-        if (!code.trim()) {
+        const stored = typeof data === 'string' ? data : data.code;
+        if (typeof stored !== 'string' || !stored.trim()) {
             return res.status(404).send("-- Z Protector: script vacío o inválido.");
         }
 
-        // El campo code ya contiene el output del motor Z-Lang.
-        // No volver a envolverlo en Base64 ni modificar su sintaxis.
+        // Backstop: older UI versions could have stored the original source when
+        // the obfuscator endpoint failed. Never serve that source directly.
+        const alreadyZ3 = stored.includes('Z3 header') && stored.includes('Z3 opcode') && stored.includes('__z');
+        const code = alreadyZ3 ? stored : new CodeGenerator().generate(stored);
+
+        if (typeof code !== 'string' || !code.trim()) {
+            return res.status(500).send("-- Z Protector: el motor no generó código protegido.");
+        }
+
         return res.status(200).send(code);
     } catch (err) {
         return res.status(500).send("-- Z Protector: error interno del servidor.");
