@@ -28,9 +28,7 @@ function scanQuoted(source, start, quote) {
             i += 2;
             continue;
         }
-        if (source[i] === quote) {
-            return i + 1;
-        }
+        if (source[i] === quote) return i + 1;
         i += 1;
     }
     return source.length;
@@ -52,8 +50,26 @@ function scanLongBracket(source, start) {
 
 function scanNumber(source, start) {
     let i = start;
-    while (i < source.length && /[0-9A-Fa-fxXbBeE._]/.test(source[i])) i += 1;
-    if (source[i] === '+' || source[i] === '-') i += 1;
+    if (source[i] === '0' && (source[i + 1] === 'x' || source[i + 1] === 'X')) {
+        i += 2;
+        while (i < source.length && /[0-9A-Fa-f_]/.test(source[i])) i += 1;
+        if (source[i] === '.') {
+            i += 1;
+            while (i < source.length && /[0-9A-Fa-f_]/.test(source[i])) i += 1;
+        }
+        return i;
+    }
+
+    while (i < source.length && /[0-9_]/.test(source[i])) i += 1;
+    if (source[i] === '.') {
+        i += 1;
+        while (i < source.length && /[0-9_]/.test(source[i])) i += 1;
+    }
+    if (source[i] === 'e' || source[i] === 'E') {
+        i += 1;
+        if (source[i] === '+' || source[i] === '-') i += 1;
+        while (i < source.length && /[0-9_]/.test(source[i])) i += 1;
+    }
     return i;
 }
 
@@ -69,9 +85,7 @@ function readToken(source, start) {
 
     if (ch === '-' && next === '-') {
         const longEnd = scanLongBracket(source, start + 2);
-        if (longEnd !== -1) {
-            return { type: TOKEN_TYPES.COMMENT, text: source.slice(start, longEnd), next: longEnd };
-        }
+        if (longEnd !== -1) return { type: TOKEN_TYPES.COMMENT, text: source.slice(start, longEnd), next: longEnd };
         const end = source.indexOf('\n', start + 2);
         const i = end === -1 ? source.length : end;
         return { type: TOKEN_TYPES.COMMENT, text: source.slice(start, i), next: i };
@@ -83,9 +97,7 @@ function readToken(source, start) {
     }
 
     const longEnd = ch === '[' ? scanLongBracket(source, start) : -1;
-    if (longEnd !== -1) {
-        return { type: TOKEN_TYPES.STRING, text: source.slice(start, longEnd), next: longEnd };
-    }
+    if (longEnd !== -1) return { type: TOKEN_TYPES.STRING, text: source.slice(start, longEnd), next: longEnd };
 
     if (isAlpha(ch)) {
         let i = start + 1;
@@ -102,19 +114,11 @@ function readToken(source, start) {
         '...', '::', '->', '=>', '==', '~=', '<=', '>=', '..', '+=', '-=', '*=', '/=', '%=', '^=', '&&', '||', '<<', '>>', '//'
     ];
     for (const op of operators) {
-        if (source.startsWith(op, start)) {
-            return { type: TOKEN_TYPES.OPERATOR, text: op, next: start + op.length };
-        }
+        if (source.startsWith(op, start)) return { type: TOKEN_TYPES.OPERATOR, text: op, next: start + op.length };
     }
 
-    if ('+-*/%^#=<>~&|'.includes(ch)) {
-        return { type: TOKEN_TYPES.OPERATOR, text: ch, next: start + 1 };
-    }
-
-    if ('(){}[];:,.'.includes(ch)) {
-        return { type: TOKEN_TYPES.PUNCT, text: ch, next: start + 1 };
-    }
-
+    if ('+-*/%^#=<>~&|'.includes(ch)) return { type: TOKEN_TYPES.OPERATOR, text: ch, next: start + 1 };
+    if ('(){}[];:,.'.includes(ch)) return { type: TOKEN_TYPES.PUNCT, text: ch, next: start + 1 };
     return { type: TOKEN_TYPES.OTHER, text: ch, next: start + 1 };
 }
 
