@@ -13,38 +13,18 @@ class CodeGenerator {
         const alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
         const chars = alphabet + '0123456789';
         let name = alphabet[this.randomInt(0, alphabet.length - 1)];
-        for (let i = 1, n = this.randomInt(5, 9); i < n; i += 1) {
-            name += chars[this.randomInt(0, chars.length - 1)];
-        }
+        for (let i = 1, n = this.randomInt(5, 9); i < n; i += 1) name += chars[this.randomInt(0, chars.length - 1)];
         return name;
     }
 
     names() {
         return {
-            alphabet: this.randomName(),
-            map: this.randomName(),
-            packet: this.randomName(),
-            parts: this.randomName(),
-            part: this.randomName(),
-            text: this.randomName(),
-            raw: this.randomName(),
-            out: this.randomName(),
-            pc: this.randomName(),
-            op: this.randomName(),
-            len: this.randomName(),
-            ch: this.randomName(),
-            i: this.randomName(),
-            j: this.randomName(),
-            hi: this.randomName(),
-            lo: this.randomName(),
-            idx: this.randomName(),
-            state: this.randomName(),
-            value: this.randomName(),
-            loader: this.randomName(),
-            err: this.randomName(),
-            tokenCount: this.randomName(),
-            checksumA: this.randomName(),
-            checksumB: this.randomName()
+            alphabet: this.randomName(), map: this.randomName(), parts: this.randomName(), part: this.randomName(),
+            text: this.randomName(), raw: this.randomName(), out: this.randomName(), pc: this.randomName(),
+            op: this.randomName(), len: this.randomName(), ch: this.randomName(), i: this.randomName(), j: this.randomName(),
+            hi: this.randomName(), lo: this.randomName(), state: this.randomName(), value: this.randomName(),
+            loader: this.randomName(), err: this.randomName(), tokenCount: this.randomName(),
+            decoyA: this.randomName(), decoyB: this.randomName()
         };
     }
 
@@ -52,7 +32,7 @@ class CodeGenerator {
         try {
             luaparse.parse(source, { wait: false, luaVersion: '5.1' });
         } catch (_) {
-            // Luau syntax can legitimately exceed luaparse 0.3.1.
+            // Luau extends Lua 5.1, so parser rejection here is not fatal.
         }
     }
 
@@ -61,14 +41,12 @@ class CodeGenerator {
         const b = this.randomInt(1000, 999999);
         const c = this.randomInt(7, 97);
         const value = (a * c + b + salt) % 1000003;
-        return `local ${n.checksumA}=${a};local ${n.checksumB}=(${value}-${a}+${b})%1000003;${n.checksumB}=${n.checksumB}`;
+        return `local ${n.decoyA}=${a};local ${n.decoyB}=(${value}-${a}+${b})%1000003`;
     }
 
     generate(rawLuaCode) {
         const source = typeof rawLuaCode === 'string' ? rawLuaCode : rawLuaCode && rawLuaCode.source;
-        if (typeof source !== 'string' || !source.trim()) {
-            throw new Error('El código Lua/Luau está vacío.');
-        }
+        if (typeof source !== 'string' || !source.trim()) throw new Error('El código Lua/Luau está vacío.');
 
         this.validateSource(source);
 
@@ -77,9 +55,16 @@ class CodeGenerator {
         const packet = encodeBytecode(ir);
         const n = this.names();
 
-        const parts = packet.z.map(part =>
-            `{${part.p},${part.n},"${part.s}",${part.x},${part.q},${part.t},${part.a},${part.m},${packet.h}}`
-        ).join(',');
+        const parts = packet.z.map(part => {
+            const inv = crypto.createHash('sha256').update(String(part.m)).digest()[0];
+            // m is odd; the runtime needs the exact modular inverse, so encode it below from the codec value.
+            const exactInv = (() => {
+                for (let i = 1; i < 256; i += 2) if (((part.m * i) & 255) === 1) return i;
+                throw new Error('Z runtime inverse unavailable.');
+            })();
+            void inv;
+            return `{${part.p},${part.n},"${part.s}",${part.x},${part.q},${part.t},${part.a},${part.m},${exactInv}}`;
+        }).join(',');
 
         const decoder = [];
         decoder.push(`local ${n.alphabet}="${ALPHABET}"`);
@@ -102,7 +87,6 @@ class CodeGenerator {
         decoder.push('end');
         decoder.push(`local ${n.out}=table.concat(${n.raw})`);
 
-        // Z-IR runtime: validate header/opcodes and rebuild the original token stream.
         decoder.push(`local ${n.pc}=1;local ${n.text}={};local ${n.tokenCount}=0`);
         decoder.push(`while ${n.pc}<=#${n.out} do`);
         decoder.push(`local ${n.op}=string.byte(${n.out},${n.pc});${n.pc}=${n.pc}+1`);
@@ -110,7 +94,6 @@ class CodeGenerator {
         decoder.push(`local ${n.raw}=string.byte(${n.out},${n.pc});local ${n.value}=string.byte(${n.out},${n.pc}+1);if ${n.raw}~=2 or ${n.value}~=1 then error("Z-IR header") end;${n.pc}=${n.pc}+2`);
         decoder.push(`elseif ${n.op}==17 then`);
         decoder.push(`local ${n.raw}=string.byte(${n.out},${n.pc});local ${n.len}=string.byte(${n.out},${n.pc}+1)*256+string.byte(${n.out},${n.pc}+2);${n.pc}=${n.pc}+3`);
-        decoder.push(`local ${n.text}[1]`);
         decoder.push(`local ${n.ch}=string.sub(${n.out},${n.pc},${n.pc}+${n.len}-1);${n.text}[#${n.text}+1]=${n.ch};${n.pc}=${n.pc}+${n.len};${n.tokenCount}=${n.tokenCount}+1`);
         decoder.push(`elseif ${n.op}==47 then break else error("Z-IR opcode") end`);
         decoder.push('end');
@@ -118,9 +101,7 @@ class CodeGenerator {
         decoder.push(`if not ${n.loader} then error(${n.err}) end`);
         decoder.push(`return ${n.loader}()`);
 
-        // The encoded payload is digits + punctuation only; the Lua wrapper is intentionally minified.
-        const decoy = this.makeDecoy(n, packet.h);
-        return `${decoy};${decoder.join(';')}`;
+        return `${this.makeDecoy(n, packet.h)};${decoder.join(';')}`;
     }
 }
 
