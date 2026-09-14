@@ -88,11 +88,10 @@ class CodeGenerator {
         decoder.push('end');
         decoder.push(`local ${n.out}=table.concat(${n.raw})`);
 
-        // Integrity layer for the custom Z-IR stream.
         decoder.push(`local ${n.checkA}=0x3d;local ${n.checkB}=0xa7;local ${n.checkIndex}=0`);
-        decoder.push(`for ${n.i}=1,#${n.out} do local ${n.value}=string.byte(${n.out},${n.i});${n.checkIndex}=${n.i}-1;${n.checkA}=(${n.checkA}+${n.value}+${n.checkIndex})%256;${n.checkB}=(${n.checkB}~0)`);
-        decoder.push(`end`);
-        decoder.push(`local ${n.expectedSize}=${packet.c};local ${n.expectedHash}=${packet.h};if #${n.out}~=${n.expectedSize} then error("Z payload size") end`);
+        decoder.push(`for ${n.i}=1,#${n.out} do local ${n.value}=string.byte(${n.out},${n.i});${n.checkIndex}=${n.i}-1;${n.checkA}=(${n.checkA}+${n.value}+${n.checkIndex})%256;${n.checkB}=${n.checkB}~(((${n.value}+${n.checkA}+${n.checkIndex}*13)%256)) end`);
+        decoder.push(`local ${n.expectedSize}=${packet.c};local ${n.expectedHash}=${packet.h};if #${n.out}~=${n.expectedSize} or (${n.checkA}*256+${n.checkB})~=${n.expectedHash} then error("Z payload integrity") end`);
+
         decoder.push(`local ${n.pc}=1;local ${n.text}={};local ${n.tokenCount}=0`);
         decoder.push(`while ${n.pc}<=#${n.out} do`);
         decoder.push(`local ${n.op}=string.byte(${n.out},${n.pc});${n.pc}=${n.pc}+1`);
