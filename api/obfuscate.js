@@ -18,9 +18,11 @@ module.exports = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            engine: 'Z-Lang 2',
-            format: 'Z-IR / Z-Bytecode',
+            engine: 'Z-Lang 3',
+            format: 'Z-Bytecode / Stack VM',
             payloadAlphabet: 'digits-and-symbols-only',
+            sourceReconstruction: false,
+            directBytecodeExecution: true,
             singleLine: true,
             code: obfuscatedCode,
             obfuscatedCode
