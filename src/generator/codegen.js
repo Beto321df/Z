@@ -114,7 +114,9 @@ class CodeGenerator {
         decoder.push(`if not ${n.loader} then error(${n.err}) end`);
         decoder.push(`return ${n.loader}()`);
 
-        const output = `${this.makeDecoy(n, packet.h)};${decoder.join(';')}`;
+        // Join structural Lua statements without inserting a semicolon after
+        // block starters/enders. The final line is still whitespace-minified.
+        const output = `${this.makeDecoy(n, packet.h)} ${decoder.join(' ')}`;
         this.lintGenerated(output);
         return output;
     }
