@@ -1,7 +1,7 @@
 {
   "name": "z-obfuscator",
-  "version": "1.0.0",
-  "description": "Motor de Ofuscación Luau para Roblox con claves de 15 caracteres y símbolos",
+  "version": "1.1.0",
+  "description": "Motor de Ofuscación Luau para Roblox con frontend, Z-IR, Z-Bytecode y VM propios",
   "main": "api/obfuscate.js",
   "scripts": {
     "test": "node tests/runTest.js"
