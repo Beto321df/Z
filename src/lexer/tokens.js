@@ -11,7 +11,7 @@ const TokenType = Object.freeze({
 const KEYWORDS = new Set([
     'and', 'break', 'continue', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function',
     'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return', 'then', 'true', 'until',
-    'while', 'goto', 'type', 'export'
+    'while', 'goto', 'export'
 ]);
 
 const MULTI_CHAR_OPERATORS = Object.freeze([
