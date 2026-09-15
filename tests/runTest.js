@@ -1,5 +1,5 @@
 const assert = require('assert');
-const CodeGenerator = require('../src/generator/codegen.js');
+const CodeGenerator = require('../src/generator/stableCodegen.js');
 const { buildProgram, OPS } = require('../src/zlang/nativeCompiler3');
 const LuauParser = require('../src/parser/luauParser.js');
 const Tokenizer = require('../src/lexer/tokenizer.js');
@@ -111,6 +111,7 @@ for (const sample of samples) {
     assert.strictEqual(typeof generatedA, 'string');
     assert(generatedA.length > sample.source.length);
     assert(!/\n/.test(generatedA));
+    assert(generatedA.includes('Z3-stable'));
     assert(!generatedA.includes(sample.source));
     assert.notStrictEqual(generatedA, generatedB);
 }
@@ -123,5 +124,5 @@ const ast = new LuauParser(tokenSample).parse();
 assert.strictEqual(ast.type, 'Chunk');
 assert.strictEqual(ast.body.length, 2);
 
-console.log('Z-native parser + Z-IR + Z-Lang 3 stack VM pipeline: OK');
+console.log('Z-native parser + Z-IR + stable Z-Lang 3 stack VM pipeline: OK');
 console.log(`Muestras compiladas y ejecutadas en reference VM: ${samples.length}`);
