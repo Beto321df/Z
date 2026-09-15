@@ -66,6 +66,7 @@ function runReference(source, expected, setup = {}) {
 
 const samples = [
     { source: 'print("Hello from Z3")', expected: ['Hello from Z3'] },
+    { source: 'local x = nil\nlocal y = 42\nprint(y)', expected: [42] },
     { source: 'local x = 10 + 20\nprint(x)', expected: [30] },
     { source: 'local t = {a = 1, b = "ok"}\nprint(t.a, t.b)', expected: [1, 'ok'] },
     { source: 'local sum = 0\nfor i = 1, 5 do sum = sum + i end\nprint(sum)', expected: [15] },
@@ -113,6 +114,18 @@ for (const sample of samples) {
     assert(!/\n/.test(generatedA));
     assert(!generatedA.includes(sample.source));
     assert.notStrictEqual(generatedA, generatedB);
+}
+
+// Regression: nil constants are type-only entries in Z3. A payload byte after
+// a nil constant would shift the following constant/function data and make the
+// Roblox loader report "Z3 constant" at runtime.
+{
+    const program = buildProgram('local a=nil\nlocal b=42\nprint(b)');
+    const raw = encodeProgram(program);
+    let pos = 7; // magic(3) + reserved(1) + constant-count(4)
+    assert.strictEqual(raw[pos], 4); // first constant is nil
+    pos += 1; // nil has no payload
+    assert.strictEqual(raw[pos], 2); // next constant starts immediately
 }
 
 const tokenSample = 'local 艾丝 = "ok"; if 艾丝 == "ok" then print(艾丝) end';
