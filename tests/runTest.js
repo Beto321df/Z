@@ -1,6 +1,8 @@
 const assert = require('assert');
 const CodeGenerator = require('../src/generator/codegen.js');
-const { buildProgram, OPS } = require('../src/zlang/compiler3');
+const { buildProgram, OPS } = require('../src/zlang/nativeCompiler3');
+const LuauParser = require('../src/parser/luauParser.js');
+const Tokenizer = require('../src/lexer/tokenizer.js');
 const { encodeProgram } = require('../src/zlang/format3');
 const { encodeBytecode, decodeBytecode, ALPHABET, checksum } = require('../src/zlang/codec');
 const { executeProgram, multi } = require('../src/zlang/referenceVm');
@@ -15,6 +17,7 @@ function assertSymbolOnly(packet) {
 
 function validateProgram(program) {
     assert.strictEqual(program.version, 3);
+    assert.strictEqual(program.parser, 'Z-native-luau');
     assert(program.functions.length >= 1);
     for (const fn of program.functions) {
         assert(Array.isArray(fn.code));
@@ -31,7 +34,7 @@ function runReference(source, expected, setup = {}) {
     validateProgram(program);
     const output = [];
     const globals = {
-        print: (...args) => { output.push(...args); },
+        print: (...args) => output.push(...args),
         pairs: table => {
             const keys = Object.keys(table);
             let index = 0;
@@ -60,16 +63,20 @@ const samples = [
     { source: 'local x = 10 + 20\nprint(x)', expected: [30] },
     { source: 'local t = {a = 1, b = "ok"}\nprint(t.a, t.b)', expected: [1, 'ok'] },
     { source: 'local sum = 0\nfor i = 1, 5 do sum = sum + i end\nprint(sum)', expected: [15] },
-    { source: 'local x = 0\nwhile x < 3 do x = x + 1 end\nprint(x)', expected: [3] },
+    { source: 'local x = 0\nwhile x < 3 do x += 1 end\nprint(x)', expected: [3] },
     { source: 'local function add(a,b) return a+b end\nprint(add(2,3))', expected: [5] },
+    { source: 'local function outer() local x=10 return function() return x+5 end end\nlocal f=outer()\nprint(f())', expected: [15] },
     { source: 'for k,v in pairs({a=1,b=2}) do print(k,v) end', expectedCount: 4 },
     { source: 'local game = {GetService=function(self,name) return {Name=name} end}\nprint(game:GetService("Players").Name)', expected: ['Players'] },
     { source: 'local t={};t.value=42\nprint(t.value)', expected: [42] },
-    { source: 'local t={};t["value"]=42\nprint(t["value"])', expected: [42] }
+    { source: 'local t={};t["value"]=42\nprint(t["value"])', expected: [42] },
+    { source: 'local 艾 = 7\nlocal カナ = 艾 * 3\nprint(カナ)', expected: [21] },
+    { source: 'local n:number = 4\nprint(n)', expected: [4] },
+    { source: 'local text = [[Z\nLuau]]\nprint(text)', expected: ['Z\nLuau'] }
 ];
 
 for (const sample of samples) {
-    const program = runReference(sample.source, sample.expected, sample.source.includes('GetService') ? {} : {});
+    const program = runReference(sample.source, sample.expected);
     if (sample.expectedCount) {
         const out = [];
         const globals = {
@@ -93,15 +100,22 @@ for (const sample of samples) {
     assert.strictEqual(Buffer.from(decoded).toString('hex'), Buffer.from(raw).toString('hex'));
     assert.strictEqual(checksum(decoded), packet.h);
 
-    const generator = new CodeGenerator();
-    const generatedA = generator.generate(sample.source);
+    const generatedA = new CodeGenerator().generate(sample.source);
     const generatedB = new CodeGenerator().generate(sample.source);
     assert.strictEqual(typeof generatedA, 'string');
     assert(generatedA.length > sample.source.length);
     assert(!/\n/.test(generatedA));
     assert(!generatedA.includes(sample.source));
-    assert.notStrictEqual(generatedA, generatedB, 'Dos compilaciones Z3 deben poder variar su representación.');
+    assert.notStrictEqual(generatedA, generatedB);
 }
 
-console.log('Z-Lang 3 stack VM pipeline: OK');
+const tokenSample = 'local 艾丝 = "ok"; if 艾丝 == "ok" then print(艾丝) end';
+const tokens = new Tokenizer(tokenSample).tokenize();
+assert(tokens.some(t => t.type === 'IDENTIFIER' && t.value === '艾丝'));
+assert.strictEqual(tokens[tokens.length - 1].type, 'EOF');
+const ast = new LuauParser(tokenSample).parse();
+assert.strictEqual(ast.type, 'Chunk');
+assert.strictEqual(ast.body.length, 2);
+
+console.log('Z-native parser + Z-Lang 3 stack VM pipeline: OK');
 console.log(`Muestras compiladas y ejecutadas en reference VM: ${samples.length}`);
