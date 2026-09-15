@@ -115,9 +115,9 @@ class FunctionBuilder {
         if (!node) return;
         switch (node.type) {
             case 'LocalStatement': {
-                const keys = (node.variables || []).map(v => { if (v.type !== 'Identifier') throw new Error('Z local complejo no soportado.'); return this.allocLocal(v.name); });
                 const init = node.init || [];
                 for (const expr of init) this.emitExpr(expr);
+                const keys = (node.variables || []).map(v => { if (v.type !== 'Identifier') throw new Error('Z local complejo no soportado.'); return this.allocLocal(v.name); });
                 for (let i = keys.length - 1; i >= 0; i -= 1) { if (i >= init.length) this.emit(OPS.PUSH_CONST, this.program.nil()); this.emit(OPS.STORE_VAR, this.program.string(keys[i])); }
                 return;
             }
@@ -149,7 +149,7 @@ class FunctionBuilder {
             }
             case 'WhileStatement': {
                 const start = this.here(); this.emitExpr(node.condition); const exit = this.emit(OPS.JUMP_IF_FALSE);
-                const loop = { breaks: [], continues: [], continueTarget: start }; this.loopStack.push(loop); this.compileBlock(node.body, true); const back = this.emit(OPS.JUMP, start); loop.continueTarget = start;
+                const loop = { breaks: [], continues: [], continueTarget: start }; this.loopStack.push(loop); this.compileBlock(node.body, true); this.emit(OPS.JUMP, start);
                 const end = this.here(); this.patch(exit, 1, end); for (const at of loop.breaks) this.patch(at, 1, end); for (const at of loop.continues) this.patch(at, 1, loop.continueTarget); this.loopStack.pop(); return;
             }
             case 'RepeatStatement': {
