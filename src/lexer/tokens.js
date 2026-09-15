@@ -15,7 +15,7 @@ const KEYWORDS = new Set([
 ]);
 
 const MULTI_CHAR_OPERATORS = Object.freeze([
-    '...', '::', '==', '~=', '<=', '>=', '..', '//', '+=', '-=', '*=', '/=', '%=', '..='
+    '..=', '...', '::', '==', '~=', '<=', '>=', '..', '//', '+=', '-=', '*=', '/=', '%='
 ]);
 
 module.exports = { TokenType, KEYWORDS, MULTI_CHAR_OPERATORS };
