@@ -1,5 +1,5 @@
 const CodeGenerator = require('../src/generator/stableCodegen.js');
-const LuauParser = require('../parser/luauParser.js');
+const LuauParser = require('../src/parser/luauParser.js');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Credentials', true);
