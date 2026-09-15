@@ -68,12 +68,19 @@ class LuauParser {
     }
     parseExpressionStatementOrAssignment() {
         const first = this.parsePrefixExpression();
-        if (!this.isAssignmentOperator()) {
+
+        // Lua/Luau allows multiple assignment targets: a, b = ...
+        // Previously the parser checked for '=' before consuming the comma,
+        // so valid generated VM statements such as "x, y = read()" failed.
+        if (!this.isAssignmentOperator() && !this.is(',')) {
             if (['CallExpression', 'TableCallExpression', 'StringCallExpression'].includes(first.type)) return new ASTNode('CallStatement', { expression: first });
             this.error('sentencia inesperada; se esperaba llamada o asignación');
         }
+
         const variables = [this.ensureAssignable(first)];
         while (this.match(',')) variables.push(this.ensureAssignable(this.parsePrefixExpression()));
+
+        if (!this.isAssignmentOperator()) this.error('se esperaba asignación después de la lista de destinos');
         const operator = this.consume().value;
         const init = this.parseExpressionList();
         if (operator === '=') return new ASTNode('AssignmentStatement', { variables, init });
