@@ -26,6 +26,35 @@ function validateProgram(program) {
     }
 }
 
+function runReference(source, expected, setup = {}) {
+    const program = buildProgram(source);
+    validateProgram(program);
+    const output = [];
+    const globals = {
+        print: (...args) => { output.push(...args); },
+        pairs: table => {
+            const keys = Object.keys(table);
+            let index = 0;
+            return multi([(_state, _control) => {
+                index += 1;
+                const key = keys[index - 1];
+                return key === undefined ? multi([]) : multi([key, table[key]]);
+            }, null, null]);
+        },
+        ipairs: table => {
+            let index = 0;
+            return multi([(_state, _control) => {
+                index += 1;
+                return index > table.length ? multi([]) : multi([index, table[index]]);
+            }, null, 0]);
+        },
+        ...setup
+    };
+    executeProgram(program, globals);
+    if (expected) assert.deepStrictEqual(output, expected, source);
+    return program;
+}
+
 const samples = [
     { source: 'print("Hello from Z3")', expected: ['Hello from Z3'] },
     { source: 'local x = 10 + 20\nprint(x)', expected: [30] },
@@ -34,12 +63,26 @@ const samples = [
     { source: 'local x = 0\nwhile x < 3 do x = x + 1 end\nprint(x)', expected: [3] },
     { source: 'local function add(a,b) return a+b end\nprint(add(2,3))', expected: [5] },
     { source: 'for k,v in pairs({a=1,b=2}) do print(k,v) end', expectedCount: 4 },
-    { source: 'local game = {GetService=function(self,name) return {Name=name} end}\nprint(game:GetService("Players").Name)', expected: ['Players'] }
+    { source: 'local game = {GetService=function(self,name) return {Name=name} end}\nprint(game:GetService("Players").Name)', expected: ['Players'] },
+    { source: 'local t={};t.value=42\nprint(t.value)', expected: [42] },
+    { source: 'local t={};t["value"]=42\nprint(t["value"])', expected: [42] }
 ];
 
 for (const sample of samples) {
-    const program = buildProgram(sample.source);
-    validateProgram(program);
+    const program = runReference(sample.source, sample.expected, sample.source.includes('GetService') ? {} : {});
+    if (sample.expectedCount) {
+        const out = [];
+        const globals = {
+            print: (...args) => out.push(...args),
+            pairs: table => {
+                const keys = Object.keys(table);
+                let index = 0;
+                return multi([(_s, _c) => { index += 1; const key = keys[index - 1]; return key === undefined ? multi([]) : multi([key, table[key]]); }, null, null]);
+            }
+        };
+        executeProgram(program, globals);
+        assert.strictEqual(out.length, sample.expectedCount, sample.source);
+    }
 
     const raw = encodeProgram(program);
     assert(raw.length > 16);
@@ -50,44 +93,14 @@ for (const sample of samples) {
     assert.strictEqual(Buffer.from(decoded).toString('hex'), Buffer.from(raw).toString('hex'));
     assert.strictEqual(checksum(decoded), packet.h);
 
-    const output = [];
-    const globals = {
-        print: (...args) => { output.push(...args); },
-        pairs: table => {
-            const keys = Object.keys(table);
-            let index = 0;
-            return multi([
-                (_state, control) => {
-                    index += 1;
-                    const key = keys[index - 1];
-                    return key === undefined ? multi([]) : multi([key, table[key]]);
-                },
-                null,
-                null
-            ]);
-        },
-        ipairs: table => {
-            let index = 0;
-            return multi([
-                (_state, control) => {
-                    index += 1;
-                    return index > table.length ? multi([]) : multi([index, table[index]]);
-                },
-                null,
-                0
-            ]);
-        }
-    };
-    const result = executeProgram(program, globals);
-    if (sample.expected) assert.deepStrictEqual(output, sample.expected, sample.source);
-    if (sample.expectedCount) assert.strictEqual(output.length, sample.expectedCount, sample.source);
-    assert(result === undefined || result !== undefined);
-
-    const generated = new CodeGenerator().generate(sample.source);
-    assert.strictEqual(typeof generated, 'string');
-    assert(generated.length > sample.source.length);
-    assert(!/\n/.test(generated));
-    assert(!generated.includes(sample.source));
+    const generator = new CodeGenerator();
+    const generatedA = generator.generate(sample.source);
+    const generatedB = new CodeGenerator().generate(sample.source);
+    assert.strictEqual(typeof generatedA, 'string');
+    assert(generatedA.length > sample.source.length);
+    assert(!/\n/.test(generatedA));
+    assert(!generatedA.includes(sample.source));
+    assert.notStrictEqual(generatedA, generatedB, 'Dos compilaciones Z3 deben poder variar su representación.');
 }
 
 console.log('Z-Lang 3 stack VM pipeline: OK');
