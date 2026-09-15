@@ -1,5 +1,5 @@
 const CodeGenerator = require('../src/generator/codegen.js');
-const luaparse = require('luaparse');
+const LuauParser = require('../src/parser/luauParser.js');
 const crypto = require('crypto');
 
 const ALPHABET = '0123456789!@#$%^&*(_+-=:;<,>.?/|';
@@ -19,35 +19,29 @@ function fallbackPack(source) {
         payload += ALPHABET[(v >>> 5) & 31] + ALPHABET[v & 31];
     }
 
-    const a = randomName();
-    const b = randomName();
-    const c = randomName();
-    const d = randomName();
-    const e = randomName();
-    const f = randomName();
-    const g = randomName();
-    const h = randomName();
+    const a = randomName(); const b = randomName(); const c = randomName(); const d = randomName();
+    const e = randomName(); const f = randomName(); const g = randomName(); const h = randomName();
     const out = [
-        `local ${a}="${ALPHABET}"`,
+        `local ${a}=\"${ALPHABET}\"`,
         `local ${b}={}`,
         `for ${c}=1,#${a} do ${b}[string.sub(${a},${c},${c})]=${c}-1 end`,
-        `local ${d}="${payload}"`,
+        `local ${d}=\"${payload}\"`,
         `local ${e}={}`,
         `for ${c}=1,#${d},2 do`,
         `local ${f}=${b}[string.sub(${d},${c},${c})]`,
         `local ${g}=${b}[string.sub(${d},${c}+1,${c}+1)]`,
         `local ${h}=(${f}*32+${g})%256`,
-        `${e}[#${e}+1]=string.char((${h}-${seed}-${c / 2 + 0.5}*${step}-${add})%256)`,
+        `${e}[#${e}+1]=string.char((${h}-${seed}-(((${c}-1)/2)*${step})-${add})%256)`,
         `end`,
         `local ${f}=table.concat(${e})`,
         `local ${g}=loadstring or load`,
-        `if not ${g} then error("Z loader: no se puede ejecutar") end`,
+        `if not ${g} then error(\"Z loader: no se puede ejecutar\") end`,
         `local ${h},${a}=${g}(${f})`,
         `if not ${h} then error(${a}) end`,
         `${h}()`
     ];
     const code = out.join(' ');
-    luaparse.parse(code, { wait: false, comments: false, luaVersion: '5.1' });
+    new LuauParser(code).parse();
     return code;
 }
 
@@ -64,14 +58,14 @@ module.exports = async (req, res) => {
 
     try {
         const body = req.body || {};
-        const sourceScript = body.code || body.script || 'print("Z-Protector Loaded")';
+        const sourceScript = body.code || body.script || 'print(\"Z-Protector Loaded\")';
         let obfuscatedCode;
         let mode = 'zlang3';
 
         try {
             obfuscatedCode = new CodeGenerator().generate(sourceScript);
-            obfuscatedCode = String(obfuscatedCode).replaceAll('\\"', '"');
-            luaparse.parse(obfuscatedCode, { wait: false, comments: false, luaVersion: '5.1' });
+            obfuscatedCode = String(obfuscatedCode).replaceAll('\\\"', '\"');
+            new LuauParser(obfuscatedCode).parse();
         } catch (_) {
             obfuscatedCode = fallbackPack(sourceScript);
             mode = 'zlang3-compat';
@@ -90,9 +84,6 @@ module.exports = async (req, res) => {
             obfuscatedCode
         });
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            error: error instanceof Error ? error.message : String(error)
-        });
+        res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
     }
 };
