@@ -1,4 +1,4 @@
-const { buildProgram } = require('../zlang/compiler3');
+const { buildProgram } = require('../zlang/nativeCompiler3');
 const { executeProgram } = require('../zlang/referenceVm');
 const { encodeProgram } = require('../zlang/format3');
 
