@@ -7,7 +7,8 @@ const OPS = Object.freeze({
     MAKE_FUNCTION: 14, RETURN: 15, RETURN_MULTI: 16, POP: 17, DUP: 18,
     BIN: 19, UNARY: 20, JUMP: 21, JUMP_IF_FALSE: 22, JUMP_IF_TRUE: 23,
     NEW_TABLE: 24, GET_VARARG: 25, FOR_NUM_PREP: 26, FOR_NUM_NEXT: 27,
-    ITER_PREP: 28, ITER_NEXT: 29, NOP: 30, BREAK: 31
+    ITER_PREP: 28, ITER_NEXT: 29, NOP: 30, BREAK: 31,
+    UNPACK_MULTI: 32, RETURN_TOP_MULTI: 33
 });
 const BIN = Object.freeze({ '+': 1, '-': 2, '*': 3, '/': 4, '%': 5, '^': 6, '..': 7, '==': 8, '~=': 9, '<': 10, '>': 11, '<=': 12, '>=': 13, '//': 14 });
 const UNARY = Object.freeze({ not: 1, '-': 2, '#': 3 });
@@ -27,6 +28,10 @@ class ProgramBuilder {
     boolean(value) { return this.constant(3, value ? 1 : 0); }
     nil() { return this.constant(4, 0); }
     addFunction(fn) { const id = this.functions.length; fn.id = id; this.functions.push(fn); return id; }
+}
+
+function isMultiProducer(node) {
+    return node && (node.type === 'CallExpression' || node.type === 'TableCallExpression' || node.type === 'StringCallExpression');
 }
 
 class FunctionBuilder {
@@ -105,6 +110,34 @@ class FunctionBuilder {
         child.emit(OPS.PUSH_CONST, this.program.nil()); child.emit(OPS.RETURN, 1); child.resolveGotos();
         this.emit(OPS.MAKE_FUNCTION, id);
     }
+    emitRValueList(expressions, targetCount) {
+        const list = expressions || [];
+        if (!targetCount) return;
+        if (!list.length) {
+            for (let i = 0; i < targetCount; i += 1) this.emit(OPS.PUSH_CONST, this.program.nil());
+            return;
+        }
+        const lastIndex = list.length - 1;
+        const singleSlots = Math.min(lastIndex, targetCount);
+        for (let i = 0; i < lastIndex; i += 1) {
+            this.emitExpr(list[i]);
+            if (i >= singleSlots) this.emit(OPS.POP);
+        }
+        const remaining = targetCount - singleSlots;
+        const last = list[lastIndex];
+        if (remaining <= 0) {
+            this.emitExpr(last, isMultiProducer(last));
+            this.emit(OPS.POP);
+            return;
+        }
+        if (isMultiProducer(last)) {
+            this.emitExpr(last, true);
+            this.emit(OPS.UNPACK_MULTI, remaining);
+            return;
+        }
+        this.emitExpr(last);
+        for (let i = 1; i < remaining; i += 1) this.emit(OPS.PUSH_CONST, this.program.nil());
+    }
     emitAssignmentTarget(node, tempKey) {
         if (node.type === 'Identifier') { this.emit(OPS.LOAD_VAR, this.program.string(tempKey)); this.storeName(node.name); return; }
         if (node.type === 'MemberExpression') { this.emitExpr(node.base); this.emit(OPS.LOAD_VAR, this.program.string(tempKey)); this.emit(OPS.SET_MEMBER, this.program.string(node.identifier.name)); return; }
@@ -115,15 +148,15 @@ class FunctionBuilder {
         if (!node) return;
         switch (node.type) {
             case 'LocalStatement': {
-                const init = node.init || [];
-                for (const expr of init) this.emitExpr(expr);
                 const keys = (node.variables || []).map(v => { if (v.type !== 'Identifier') throw new Error('Z local complejo no soportado.'); return this.allocLocal(v.name); });
-                for (let i = keys.length - 1; i >= 0; i -= 1) { if (i >= init.length) this.emit(OPS.PUSH_CONST, this.program.nil()); this.emit(OPS.STORE_VAR, this.program.string(keys[i])); }
+                this.emitRValueList(node.init || [], keys.length);
+                for (let i = keys.length - 1; i >= 0; i -= 1) this.emit(OPS.STORE_VAR, this.program.string(keys[i]));
                 return;
             }
             case 'AssignmentStatement': {
-                const vars = node.variables || []; const init = node.init || []; const temps = [];
-                for (let i = 0; i < vars.length; i += 1) { if (init[i]) this.emitExpr(init[i]); else this.emit(OPS.PUSH_CONST, this.program.nil()); const temp = this.allocTemp(); temps.push(temp); this.emit(OPS.STORE_VAR, this.program.string(temp)); }
+                const vars = node.variables || []; const init = node.init || []; const temps = vars.map(() => this.allocTemp());
+                this.emitRValueList(init, vars.length);
+                for (let i = temps.length - 1; i >= 0; i -= 1) this.emit(OPS.STORE_VAR, this.program.string(temps[i]));
                 for (let i = 0; i < vars.length; i += 1) this.emitAssignmentTarget(vars[i], temps[i]);
                 return;
             }
@@ -131,6 +164,7 @@ class FunctionBuilder {
             case 'ReturnStatement': {
                 const args = node.arguments || [];
                 if (!args.length) { this.emit(OPS.PUSH_CONST, this.program.nil()); this.emit(OPS.RETURN, 1); }
+                else if (args.length === 1 && isMultiProducer(args[0])) { this.emitExpr(args[0], true); this.emit(OPS.RETURN_TOP_MULTI); }
                 else if (args.length === 1) { this.emitExpr(args[0]); this.emit(OPS.RETURN, 1); }
                 else { for (const arg of args) this.emitExpr(arg); this.emit(OPS.RETURN_MULTI, args.length); }
                 return;
