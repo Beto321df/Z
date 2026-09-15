@@ -1,6 +1,6 @@
 const crypto = require('crypto');
-const luaparse = require('luaparse');
-const { buildProgram, OPS } = require('../zlang/compiler3');
+const LuauParser = require('../parser/luauParser.js');
+const { buildProgram, OPS } = require('../zlang/nativeCompiler3');
 const { encodeProgram } = require('../zlang/format3');
 const { encodeBytecode, ALPHABET } = require('../zlang/codec');
 
@@ -24,7 +24,7 @@ class CodeGenerator {
         return out;
     }
     lintGenerated(output) {
-        try { luaparse.parse(output, { wait: false, comments: false, luaVersion: '5.1' }); }
+        try { new LuauParser(output).parse(); }
         catch (error) { throw new Error(`Z generó un loader inválido: ${error.message}`); }
     }
     decodeLines(packet, n) {
@@ -46,7 +46,7 @@ class CodeGenerator {
             `local ${n.left}=${n.map}[string.sub(${n.part}[3],${n.idx},${n.idx})]`,
             `local ${n.right}=${n.map}[string.sub(${n.part}[3],${n.idx}+1,${n.idx}+1)]`,
             `local ${n.v}=(${n.left}*32+${n.right})%256`,
-            `local ${n.state}=(${n.part}[4]+(((${n.idx}-1)/2)*${n.part}[6])+(((${n.idx}-1)/2+1)*(((${n.idx}-1)/2+${n.part}[5])))%256`,
+            `local ${n.state}=(${n.part}[4]+(((${n.idx}-1)/2)*${n.part}[6])+((((${n.idx}-1)/2)+1)*(((${n.idx}-1)/2)+${n.part}[5])))%256`,
             `${n.v}=(((${n.v}-${n.part}[7]-${n.state})%256)*${n.part}[9])%256`,
             `${n.chunk}[#${n.chunk}+1]=string.char(${n.v})`,
             'end',
@@ -81,7 +81,7 @@ class CodeGenerator {
             `${n.exec}=function(${n.a},${n.parent},${n.args})`,
             `local ${n.def}=${n.functions}[${n.a}];local ${n.env}={__p=${n.parent}};local ${n.varargs}={}`,
             `for ${n.idx}=1,#${n.def}.params do local ${n.key}=${n.def}.params[${n.idx}];rawset(${n.env},${n.key},{v=${n.args}[${n.idx}]}) end`,
-            `if ${n.def}.vararg then for ${n.idx}=#${n.def}.params+1,#${n.args} do ${n.varargs}[#${n.varargs}+1]=${n.args}[${n.idx}] end end`,
+            `if ${n.def}.vararg then for ${n.idx}=${n.def}.params+1,#${n.args} do ${n.varargs}[#${n.varargs}+1]=${n.args}[${n.idx}] end end`,
             `local ${n.stack}={};local ${n.sp}=0;local ${n.pc}=1;local ${n.loops}={}`,
             `local function ${n.push}(${n.v})${n.sp}=${n.sp}+1;${n.stack}[${n.sp}]=${n.v} end`,
             `local function ${n.pop}()local ${n.v}=${n.stack}[${n.sp}];${n.stack}[${n.sp}]=nil;${n.sp}=${n.sp}-1;return ${n.v} end`,
