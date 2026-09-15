@@ -6,8 +6,6 @@
   "scripts": {
     "test": "node tests/runTest.js"
   },
-  "dependencies": {
-    "luaparse": "^0.3.1"
-  },
+  "dependencies": {},
   "devDependencies": {}
 }
