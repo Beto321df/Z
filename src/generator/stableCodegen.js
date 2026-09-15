@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const BaseCodeGenerator = require('./codegen.js');
 const { decodeBytecode } = require('../zlang/codec');
+const { OPS } = require('../zlang/nativeCompiler3');
 
 // Runtime-stability layer for the existing Z-Lang 3 generator.
 // It keeps the existing compiler/bytecode/VM, but replaces the fragile
@@ -40,6 +41,22 @@ class StableCodeGenerator extends BaseCodeGenerator {
             `local ${n.program}=table.concat(${n.buf})`,
             `local ${n.keep}=\"Z3-stable\"`
         ];
+    }
+    vmLines(program, n) {
+        const lines = super.vmLines(program, n).slice();
+        const dispatchIndex = lines.findIndex(line => line.startsWith(`if ${n.op}==${OPS.PUSH_CONST}`));
+        if (dispatchIndex < 0) throw new Error('Z stable VM dispatch no encontrado.');
+
+        const marker = ` elseif ${n.op}==${OPS.RETURN} then`;
+        const multiCases =
+            ` elseif ${n.op}==${OPS.UNPACK_MULTI} then ` +
+            `local ${n.result}=${n.pop}();if type(${n.result})~=\"table\" or ${n.result}.__z~=1 then error(\"Z3 multi invalido\") end;` +
+            `for ${n.idx}=1,${n.a} do ${n.push}(${n.result}.v[${n.idx}]) end` +
+            ` elseif ${n.op}==${OPS.RETURN_TOP_MULTI} then ` +
+            `local ${n.result}=${n.pop}();if type(${n.result})~=\"table\" or ${n.result}.__z~=1 then error(\"Z3 multi return invalido\") end;return ${n.result}`;
+
+        lines[dispatchIndex] = lines[dispatchIndex].replace(marker, multiCases + marker);
+        return lines;
     }
 }
 
