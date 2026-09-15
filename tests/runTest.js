@@ -24,7 +24,7 @@ function validateProgram(program) {
         assert(Array.isArray(fn.code));
         for (const ins of fn.code) {
             assert(Array.isArray(ins) && ins.length === 5);
-            assert(Number.isInteger(ins[0]) && ins[0] >= 1 && ins[0] <= OPS.BREAK);
+            assert(Number.isInteger(ins[0]) && ins[0] >= 1 && ins[0] <= OPS.RETURN_TOP_MULTI);
             for (let i = 1; i < 5; i += 1) assert(Number.isInteger(ins[i]) && ins[i] >= 0);
         }
     }
@@ -72,6 +72,7 @@ const samples = [
     { source: 'local x = 0\nwhile x < 3 do x += 1 end\nprint(x)', expected: [3] },
     { source: 'local function add(a,b) return a+b end\nprint(add(2,3))', expected: [5] },
     { source: 'local function outer() local x=10 return function() return x+5 end end\nlocal f=outer()\nprint(f())', expected: [15] },
+    { source: 'local function pair() return 10, 20 end\nlocal a,b = pair()\nprint(a+b)', expected: [30] },
     { source: 'for k,v in pairs({a=1,b=2}) do print(k,v) end', expectedCount: 4 },
     { source: 'local game = {GetService=function(self,name) return {Name=name} end}\nprint(game:GetService("Players").Name)', expected: ['Players'] },
     { source: 'local t={};t.value=42\nprint(t.value)', expected: [42] },
