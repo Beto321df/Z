@@ -1,4 +1,4 @@
-const TokenType = {
+const TokenType = Object.freeze({
     KEYWORD: 'KEYWORD',
     IDENTIFIER: 'IDENTIFIER',
     NUMBER: 'NUMBER',
@@ -6,11 +6,16 @@ const TokenType = {
     OPERATOR: 'OPERATOR',
     SYMBOL: 'SYMBOL',
     EOF: 'EOF'
-};
+});
 
 const KEYWORDS = new Set([
-    'local', 'function', 'return', 'if', 'then', 'else', 'elseif', 'end',
-    'while', 'do', 'for', 'in', 'break', 'true', 'false', 'nil', 'and', 'or', 'not'
+    'and', 'break', 'continue', 'do', 'else', 'elseif', 'end', 'false', 'for', 'function',
+    'if', 'in', 'local', 'nil', 'not', 'or', 'repeat', 'return', 'then', 'true', 'until',
+    'while', 'goto', 'type', 'export', 'typeof'
 ]);
 
-module.exports = { TokenType, KEYWORDS };
+const MULTI_CHAR_OPERATORS = Object.freeze([
+    '...', '::', '==', '~=', '<=', '>=', '..', '//', '+=', '-=', '*=', '/=', '%=', '..='
+]);
+
+module.exports = { TokenType, KEYWORDS, MULTI_CHAR_OPERATORS };
