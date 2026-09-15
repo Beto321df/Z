@@ -1,5 +1,5 @@
-const CodeGenerator = require('../src/generator/codegen.js');
-const LuauParser = require('../src/parser/luauParser.js');
+const CodeGenerator = require('../src/generator/stableCodegen.js');
+const LuauParser = require('../parser/luauParser.js');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -21,7 +21,7 @@ module.exports = async (req, res) => {
         res.status(200).json({
             success: true,
             engine: 'Z-Lang 3',
-            mode: 'zlang3',
+            mode: 'zlang3-stable',
             format: 'Z-Bytecode / Stack VM',
             parser: 'Z-native-luau',
             payloadAlphabet: 'digits-and-symbols-only',
