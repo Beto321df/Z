@@ -1,4 +1,4 @@
-const CodeGenerator = require('../src/generator/codegen.js');
+const CodeGenerator = require('../src/generator/stableCodegen.js');
 
 export default async function handler(req, res) {
     const { id } = req.query;
@@ -41,10 +41,10 @@ export default async function handler(req, res) {
             return res.status(404).send("-- Z Protector: script vacío o inválido.");
         }
 
-        // Backstop: older UI versions could have stored the original source when
-        // the obfuscator endpoint failed. Never serve that source directly.
-        const alreadyZ3 = stored.includes('Z3 header') && stored.includes('Z3 opcode') && stored.includes('__z');
-        const code = alreadyZ3 ? stored : new CodeGenerator().generate(stored);
+        // Never serve legacy/plain source directly. Regenerate it with the stable
+        // Z3 runtime unless the stored result already carries the stable marker.
+        const alreadyStableZ3 = stored.includes('Z3-stable');
+        const code = alreadyStableZ3 ? stored : new CodeGenerator().generate(stored);
 
         if (typeof code !== 'string' || !code.trim()) {
             return res.status(500).send("-- Z Protector: el motor no generó código protegido.");
