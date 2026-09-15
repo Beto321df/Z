@@ -1,5 +1,5 @@
 const CodeGenerator = require('../src/generator/stableCodegen.js');
-const LuauParser = require('../src/parser/luauParser.js');
+const luaparse = require('luaparse');
 
 module.exports = async (req, res) => {
     res.setHeader('Access-Control-Allow-Credentials', true);
@@ -16,14 +16,14 @@ module.exports = async (req, res) => {
         const body = req.body || {};
         const sourceScript = body.code || body.script || 'print("Z-Protector Loaded")';
         const obfuscatedCode = new CodeGenerator().generate(sourceScript);
-        new LuauParser(obfuscatedCode).parse();
+        luaparse.parse(obfuscatedCode, { wait: false, comments: false, luaVersion: '5.1' });
 
         res.status(200).json({
             success: true,
             engine: 'Z-Lang 3',
             mode: 'zlang3-stable',
             format: 'Z-Bytecode / Stack VM',
-            parser: 'Z-native-luau',
+            parser: 'luaparse',
             payloadAlphabet: 'digits-and-symbols-only',
             sourceReconstruction: false,
             directBytecodeExecution: true,
