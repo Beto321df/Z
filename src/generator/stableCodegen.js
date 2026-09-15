@@ -33,13 +33,12 @@ class StableCodeGenerator extends BaseCodeGenerator {
 
         const encoded = chunks.map(part => `{${part.p},${part.s},{${part.b.join(',')}}}`).join(',');
         return [
-            `local ${n.map}={}`,
             `local ${n.parts}={${encoded}}`,
             `table.sort(${n.parts},function(${n.a},${n.b})return ${n.a}[1]<${n.b}[1] end)`,
             `local ${n.buf}={}`,
-            `for _,${n.part} in ipairs(${n.parts}) do local ${n.chunk}=${n.part}[3];local ${n.tmp}={};for ${n.idx}=1,#${n.chunk} do ${n.tmp}[${n.idx}]=string.char((${n.chunk}[${n.idx}]-${n.part}[2])%256) end;${n.buf}[#${n.buf}+1]=table.concat(${n.tmp}) end`,
+            `for _,${n.part} in ipairs(${n.parts}) do local ${n.chunk}=${n.part}[3];local ${n.state}={};for ${n.idx}=1,#${n.chunk} do ${n.state}[${n.idx}]=string.char((${n.chunk}[${n.idx}]-${n.part}[2])%256) end;${n.buf}[#${n.buf}+1]=table.concat(${n.state}) end`,
             `local ${n.program}=table.concat(${n.buf})`,
-            `local ${n.marker}=\"Z3-stable\"`
+            `local ${n.keep}=\"Z3-stable\"`
         ];
     }
 }
