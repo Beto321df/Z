@@ -57,8 +57,10 @@ function executeProgram(program, globals = {}) {
             else if (op === OPS.MAKE_FUNCTION) stack.push(makeFn(a, env));
             else if (op === OPS.CALL || op === OPS.CALL_MULTI) { const callArgs = []; for (let i = a - 1; i >= 0; i -= 1) callArgs[i] = stack.pop(); const fn = stack.pop(); const result = invoke(fn, callArgs); stack.push(op === OPS.CALL_MULTI ? result : result.values[0]); }
             else if (op === OPS.CALL_METHOD || op === OPS.CALL_METHOD_MULTI) { const callArgs = []; for (let i = b - 1; i >= 0; i -= 1) callArgs[i] = stack.pop(); const obj = stack.pop(); const fn = obj?.[constantValue(constants, a)]; const result = invoke(fn, [obj, ...callArgs]); stack.push(op === OPS.CALL_METHOD_MULTI ? result : result.values[0]); }
+            else if (op === OPS.UNPACK_MULTI) { const result = stack.pop(); if (!isMulti(result)) throw new Error('Z reference VM: invalid multi value'); for (let i = 0; i < a; i += 1) stack.push(result.values[i]); }
             else if (op === OPS.RETURN) return multi([stack.pop()]);
             else if (op === OPS.RETURN_MULTI) { const values = []; for (let i = a - 1; i >= 0; i -= 1) values[i] = stack.pop(); return multi(values); }
+            else if (op === OPS.RETURN_TOP_MULTI) { const result = stack.pop(); if (!isMulti(result)) throw new Error('Z reference VM: invalid multi return'); return result; }
             else if (op === OPS.GET_VARARG) stack.push(varargs[0]);
             else if (op === OPS.NEW_TABLE) stack.push({});
             else if (op === OPS.FOR_NUM_PREP) { const step = stack.pop(); const finish = stack.pop(); const start = stack.pop(); if (step === 0) throw new Error('Z reference VM: numeric for step is zero'); const frame = { key: constantValue(constants, a), current: start, finish, step }; const keep = step > 0 ? start <= finish : start >= finish; if (!keep) pc = d; else { loops.push(frame); setVar(env, frame.key, start); } }
