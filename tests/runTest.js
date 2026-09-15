@@ -6,6 +6,7 @@ const Tokenizer = require('../src/lexer/tokenizer.js');
 const { encodeProgram } = require('../src/zlang/format3');
 const { encodeBytecode, decodeBytecode, ALPHABET, checksum } = require('../src/zlang/codec');
 const { executeProgram, multi } = require('../src/zlang/referenceVm');
+const { programToIR, validateIR, irToProgram } = require('../src/zlang/ir3');
 
 function assertSymbolOnly(packet) {
     for (const part of packet.z) {
@@ -32,6 +33,11 @@ function validateProgram(program) {
 function runReference(source, expected, setup = {}) {
     const program = buildProgram(source);
     validateProgram(program);
+    const ir = programToIR(program);
+    assert.strictEqual(validateIR(ir), true);
+    const roundTrip = irToProgram(ir);
+    assert.deepStrictEqual(roundTrip.constants, program.constants);
+    assert.deepStrictEqual(roundTrip.functions, program.functions);
     const output = [];
     const globals = {
         print: (...args) => output.push(...args),
@@ -53,7 +59,7 @@ function runReference(source, expected, setup = {}) {
         },
         ...setup
     };
-    executeProgram(program, globals);
+    executeProgram(roundTrip, globals);
     if (expected) assert.deepStrictEqual(output, expected, source);
     return program;
 }
@@ -117,5 +123,5 @@ const ast = new LuauParser(tokenSample).parse();
 assert.strictEqual(ast.type, 'Chunk');
 assert.strictEqual(ast.body.length, 2);
 
-console.log('Z-native parser + Z-Lang 3 stack VM pipeline: OK');
+console.log('Z-native parser + Z-IR + Z-Lang 3 stack VM pipeline: OK');
 console.log(`Muestras compiladas y ejecutadas en reference VM: ${samples.length}`);
