@@ -1,4 +1,4 @@
-const { buildProgram, OPS, BIN, UNARY } = require('../zlang/compiler3');
+const { buildProgram, OPS, BIN, UNARY } = require('../zlang/nativeCompiler3');
 const { encodeProgram } = require('../zlang/format3');
 
 class BytecodeCompiler {
