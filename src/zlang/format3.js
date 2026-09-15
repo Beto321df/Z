@@ -24,7 +24,9 @@ function encodeProgram(program) {
         } else if (constant.type === CONST_BOOLEAN) {
             out.push(Number(constant.value) ? 1 : 0);
         } else if (constant.type === CONST_NIL) {
-            out.push(0);
+            // Nil has no payload. Keeping the format to a single type byte is
+            // important because the emitted Roblox VM advances only past the
+            // type tag for nil constants.
         } else {
             throw new Error(`Z constant type inválido: ${constant.type}`);
         }
