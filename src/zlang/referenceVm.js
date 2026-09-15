@@ -1,4 +1,4 @@
-const { OPS, BIN, UNARY } = require('./compiler3');
+const { OPS, BIN, UNARY } = require('./nativeCompiler3');
 
 const MULTI = Symbol('Z3Multi');
 function multi(values) { return { [MULTI]: true, values }; }
@@ -6,7 +6,7 @@ function isMulti(value) { return !!value && typeof value === 'object' && value[M
 function truthy(value) { return value !== null && value !== undefined && value !== false; }
 function luaLen(value) {
     if (typeof value === 'string' || Array.isArray(value)) return value.length;
-    if (value && typeof value === 'object') { let i = 1; while (Object.prototype.hasOwnProperty.call(value, i)) i += 1; return i - 1; }
+    if (value && typeof value === 'object') { let i = 1; while (Object.prototype.hasOwnProperty.call(value, i)) if (value[i] !== undefined) i += 1; return i - 1; }
     return 0;
 }
 function getVar(env, key) { for (let current = env; current; current = current.parent) if (current.cells.has(key)) return current.cells.get(key).value; return undefined; }
@@ -24,13 +24,11 @@ function luaUnary(id, value) {
     switch (id) { case UNARY.not: return !truthy(value); case UNARY['-']: return -value; case UNARY['#']: return luaLen(value); default: throw new Error(`Z reference VM: unary opcode ${id}`); }
 }
 function executeProgram(program, globals = {}) {
-    const functions = program.functions;
-    const constants = program.constants;
+    const functions = program.functions; const constants = program.constants;
     function invoke(fn, args) { if (typeof fn !== 'function') throw new Error('Z reference VM: value is not callable'); const result = fn(...args); return isMulti(result) ? result : multi([result]); }
     function makeFn(id, parent) { return (...args) => exec(id, parent, args); }
     function exec(id, parent, args) {
-        const def = functions[id];
-        const env = { parent, cells: new Map() };
+        const def = functions[id]; const env = { parent, cells: new Map() };
         for (let i = 0; i < def.params.length; i += 1) env.cells.set(def.params[i], { value: args[i] });
         const varargs = def.vararg ? args.slice(def.params.length) : [];
         const stack = []; const loops = []; let pc = 1;
